@@ -26,6 +26,12 @@ _insert description_
 
 ### Agent Skills
 
+1. Solana Dev Skills: for building apps in Solana
+2. Superpowers: for brainstorming, planning, and execution of the works
+3. UI/UX Pro Max: for better UI/UX design
+
+## How to run
+
 ## Tips
 
 1. use pnpm
