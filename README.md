@@ -26,9 +26,9 @@ _insert description_
 
 ### Agent Skills
 
-1. Solana Dev Skills: for building apps in Solana
-2. Superpowers: for brainstorming, planning, and execution of the works
-3. UI/UX Pro Max: for better UI/UX design
+1. [Solana Dev Skills](https://github.com/solana-foundation/solana-dev-skill): for building apps in Solana
+2. [Superpowers](https://github.com/obra/superpowers): for brainstorming, planning, and task execution
+3. [UI/UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill): for better UI/UX design
 
 ## How to run
 
