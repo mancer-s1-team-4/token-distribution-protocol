@@ -202,7 +202,7 @@ anchor test --skip-local-validator
 solana config set --url devnet
 
 # 2. Airdrop SOL for deploy fees (devnet faucet)
-solana airdrop 2
+solana airdrop 5
 
 # 3. Build for deployment
 cd contracts
@@ -233,7 +233,7 @@ anchor test --provider.cluster devnet
 | `anchor: command not found` | Run `avm use 0.32.1` and restart your terminal                                                               |
 | `Program id mismatch`       | Run `anchor keys sync` inside `contracts/`                                                                   |
 | `Error: Account not found`  | The test validator isn't running — run `anchor test` (auto-starts) or start `solana-test-validator` manually |
-| `insufficient funds`        | Run `solana airdrop 2`                                                                                       |
+| `insufficient funds`        | Run `solana airdrop 5`                                                                                       |
 | pnpm not found              | Run `npm install -g pnpm`                                                                                    |
 
 ---
