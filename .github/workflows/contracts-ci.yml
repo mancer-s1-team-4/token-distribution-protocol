@@ -15,127 +15,96 @@ concurrency:
   group: contracts-ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  ANCHOR_VERSION: 0.32.1
-  SOLANA_VERSION: 2.1.21
-  RUST_TOOLCHAIN: 1.94.1
-  CARGO_TERM_COLOR: always
-
 jobs:
-  anchor:
-    name: Anchor build and test
+  build-and-test:
+    name: Build and Test
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: contracts
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Rust
+      - name: Install System Dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: pkg-config libudev-dev libssl-dev
+          version: 1.0
+
+      - name: Cache Solana CLI
+        id: cache-solana
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/solana
+          key: solana-3.1.11-linux
+
+      - name: Install Solana CLI
+        if: steps.cache-solana.outputs.cache-hit != 'true'
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/v3.1.11/install)"
+
+      - name: Add Solana to PATH
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Install Rust 1.92.0
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ env.RUST_TOOLCHAIN }}
-          components: rustfmt,clippy
+          toolchain: 1.92.0
 
-      - name: Setup Node
+      - name: Cache Anchor CLI
+        id: cache-anchor
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/anchor
+          key: anchor-0.32.1-linux
+
+      - name: Install Anchor CLI
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/bin
+          curl -L https://github.com/solana-foundation/anchor/releases/download/v0.32.1/anchor-0.32.1-x86_64-unknown-linux-gnu \
+            -o ~/.local/bin/anchor
+          chmod +x ~/.local/bin/anchor
+
+      - name: Add Anchor to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "contracts -> target"
+
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
 
-      - name: Setup pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+          version: latest
 
       - name: Cache pnpm store
         uses: actions/cache@v4
         with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('contracts/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+          path: ~/.local/share/pnpm/store
+          key: pnpm-linux-${{ hashFiles('contracts/pnpm-lock.yaml') }}
 
-      - name: Cache Cargo registry and git
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-${{ hashFiles('contracts/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-
-            ${{ runner.os }}-cargo-
+      - name: Install Node dependencies
+        run: pnpm install --no-frozen-lockfile
 
-      - name: Cache Solana CLI
-        id: solana-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.local/share/solana/install
-          key: ${{ runner.os }}-solana-${{ env.SOLANA_VERSION }}
-
-      - name: Cache Anchor CLI
-        id: anchor-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.avm
-          key: ${{ runner.os }}-anchor-${{ env.ANCHOR_VERSION }}
-
-      - name: Cache Anchor build outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            contracts/target
-            contracts/.anchor
-          key: ${{ runner.os }}-anchor-target-${{ env.RUST_TOOLCHAIN }}-${{ env.SOLANA_VERSION }}-${{ env.ANCHOR_VERSION }}-${{ hashFiles('contracts/Cargo.lock', 'contracts/pnpm-lock.yaml', 'contracts/programs/**/*.rs', 'contracts/programs/**/Cargo.toml', 'contracts/Anchor.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-anchor-target-${{ env.RUST_TOOLCHAIN }}-${{ env.SOLANA_VERSION }}-${{ env.ANCHOR_VERSION }}-
-            ${{ runner.os }}-anchor-target-${{ env.RUST_TOOLCHAIN }}-
-
-      - name: Install Solana CLI
-        if: steps.solana-cache.outputs.cache-hit != 'true'
+      - name: Generate Solana keypair
         run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
+          mkdir -p ~/.config/solana
+          solana-keygen new --no-bip39-passphrase --silent --outfile ~/.config/solana/id.json
+          solana config set --url localhost
 
-      - name: Add Solana CLI to PATH
-        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Sync program keypair and declare_id
+        run: anchor keys sync
 
-      - name: Install Anchor Version Manager
-        run: |
-          if ! command -v avm >/dev/null 2>&1; then
-            cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
-          fi
+      - name: Build program
+        run: anchor build --provider.cluster localnet
 
-      - name: Add Anchor Version Manager to PATH
-        run: echo "$HOME/.avm/bin" >> "$GITHUB_PATH"
-
-      - name: Install Anchor CLI
-        if: steps.anchor-cache.outputs.cache-hit != 'true'
-        run: avm install $ANCHOR_VERSION
-
-      - name: Select Anchor CLI
-        run: avm use $ANCHOR_VERSION
-
-      - name: Install JavaScript dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Show tool versions
-        run: |
-          rustc --version
-          cargo --version
-          solana --version
-          anchor --version
-          pnpm --version
-          node --version
-
-      - name: Anchor build
-        run: anchor build
-
-      - name: Anchor test
-        run: anchor test
+      - name: Run anchor tests
+        run: anchor test --skip-build --provider.cluster localnet
