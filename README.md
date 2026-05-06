@@ -259,7 +259,7 @@ This project uses Claude Code skills (specialized agent workflows) to accelerate
 
 ### Skills used in this project
 
-#### 1. **solana-dev**
+#### 1. **[solana-dev](https://github.com/solana-foundation/solana-dev-skill)**
 
 **Purpose:** End-to-end Solana development — Anchor programs, testing, deployment, client SDK generation
 
@@ -286,7 +286,7 @@ User: "Build a withdraw instruction for linear vesting"
 Claude: *invokes solana-dev skill, implements with security checks + tests*
 ```
 
-#### 2. **ui-ux-pro-max**
+#### 2. [**ui-ux-pro-max**](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
 
 **Purpose:** Frontend design system, component architecture, accessibility, and UX patterns
 
@@ -312,7 +312,7 @@ User: "Design a stream creation form with wallet connect"
 Claude: *invokes ui-ux-pro-max, builds accessible form with error handling*
 ```
 
-#### 3. **superpowers**
+#### 3. [**superpowers**](https://github.com/obra/superpowers)
 
 **Purpose:** Meta-skills for systematic problem-solving and development workflows
 
@@ -395,3 +395,4 @@ Check your agent's documentation for skill invocation syntax
 - **Let auto-detection work:** Describe the full task instead of just invoking a skill name. The agent gets better context.
 - **Skills chain automatically:** Complex tasks trigger multiple skills in sequence (brainstorming → implementation → testing → verification).
 - **Check available skills:** Run `/help skills` (Claude Code) or check `.claude/skills/` directory.
+- **Reduce token usage:** Use [rust-rtk](https://github.com/rtk-ai/rtk) to compress CLI output. Saves 60-90% tokens on commands like `git`, `cargo`, `anchor`. Hook-based, transparent.
