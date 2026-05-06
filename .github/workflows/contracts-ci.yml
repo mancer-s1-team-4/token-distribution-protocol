@@ -18,6 +18,7 @@ concurrency:
 env:
   ANCHOR_VERSION: 0.32.1
   SOLANA_VERSION: 2.1.21
+  RUST_TOOLCHAIN: 1.89.0
   CARGO_TERM_COLOR: always
 
 jobs:
@@ -32,15 +33,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Read Rust toolchain
-        id: rust-toolchain
-        run: |
-          echo "channel=$(sed -n 's/channel = "\(.*\)"/\1/p' rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
-
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ steps.rust-toolchain.outputs.channel }}
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
           components: rustfmt,clippy
 
       - name: Setup Node
@@ -69,13 +65,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ runner.os }}-cargo-${{ steps.rust-toolchain.outputs.channel }}-${{ hashFiles('contracts/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-${{ hashFiles('contracts/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-${{ steps.rust-toolchain.outputs.channel }}-
+            ${{ runner.os }}-cargo-${{ env.RUST_TOOLCHAIN }}-
             ${{ runner.os }}-cargo-
 
       - name: Cache Solana CLI
@@ -98,10 +93,10 @@ jobs:
           path: |
             contracts/target
             contracts/.anchor
-          key: ${{ runner.os }}-anchor-target-${{ steps.rust-toolchain.outputs.channel }}-${{ env.SOLANA_VERSION }}-${{ env.ANCHOR_VERSION }}-${{ hashFiles('contracts/Cargo.lock', 'contracts/pnpm-lock.yaml', 'contracts/programs/**/*.rs', 'contracts/programs/**/Cargo.toml', 'contracts/Anchor.toml') }}
+          key: ${{ runner.os }}-anchor-target-${{ env.RUST_TOOLCHAIN }}-${{ env.SOLANA_VERSION }}-${{ env.ANCHOR_VERSION }}-${{ hashFiles('contracts/Cargo.lock', 'contracts/pnpm-lock.yaml', 'contracts/programs/**/*.rs', 'contracts/programs/**/Cargo.toml', 'contracts/Anchor.toml') }}
           restore-keys: |
-            ${{ runner.os }}-anchor-target-${{ steps.rust-toolchain.outputs.channel }}-${{ env.SOLANA_VERSION }}-${{ env.ANCHOR_VERSION }}-
-            ${{ runner.os }}-anchor-target-${{ steps.rust-toolchain.outputs.channel }}-
+            ${{ runner.os }}-anchor-target-${{ env.RUST_TOOLCHAIN }}-${{ env.SOLANA_VERSION }}-${{ env.ANCHOR_VERSION }}-
+            ${{ runner.os }}-anchor-target-${{ env.RUST_TOOLCHAIN }}-
 
       - name: Install Solana CLI
         if: steps.solana-cache.outputs.cache-hit != 'true'
