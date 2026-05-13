@@ -368,7 +368,7 @@ describe("token-distribution-protocol — Week 4", () => {
   it("partial withdrawal: amount_claimed prevents double-spend", async () => {
     const { recipient, streamDataKey, escrowKey, recipientATA } =
       await makeStream({ streamId: 6000, total: 1_000_000, pct: 50 });
-    const MAX_SECOND_WITHDRAW_DRIFT = 10;
+    const MAX_SECOND_WITHDRAW_DRIFT_TOKENS = 10;
 
     // First withdraw — ~50%.
     await doWithdraw(recipient, streamDataKey, escrowKey, recipientATA);
@@ -384,8 +384,8 @@ describe("token-distribution-protocol — Week 4", () => {
       const extra = second - first;
       assert.isAtMost(
         extra,
-        MAX_SECOND_WITHDRAW_DRIFT,
-        `Expected second withdraw drift <= ${MAX_SECOND_WITHDRAW_DRIFT}, got ${extra}`
+        MAX_SECOND_WITHDRAW_DRIFT_TOKENS,
+        `Expected second withdraw drift <= ${MAX_SECOND_WITHDRAW_DRIFT_TOKENS}, got ${extra}`
       );
       const streamAfter = await program.account.streamData.fetch(streamDataKey);
       assert.equal(
