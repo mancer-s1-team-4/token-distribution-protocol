@@ -235,7 +235,6 @@ describe("token-distribution-protocol — Week 4", () => {
   // Test 2: create_stream — tokens locked in escrow
   // ─────────────────────────────────────────────────────────────────────────
   it("create_stream — locks tokens in escrow, StreamData initialized correctly", async () => {
-    const now = Math.floor(Date.now() / 1000);
     const { recipient, streamDataKey, escrowKey } = await makeStream({
       streamId: 1001,
       total: 1_000_000,
