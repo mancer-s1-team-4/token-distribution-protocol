@@ -97,7 +97,7 @@ describe("create_stream", () => {
 
     await program.methods
       .createStream(streamId, amount, startTime, startTime, endTime, 0, true)
-      .accounts({
+      .accountsPartial({
         creator: creator.publicKey,
         recipient: recipient.publicKey,
         streamData,
@@ -154,7 +154,7 @@ describe("create_stream", () => {
           0,
           true
         )
-        .accounts({
+        .accountsPartial({
           creator: creator.publicKey,
           recipient: recipient.publicKey,
           streamData,
