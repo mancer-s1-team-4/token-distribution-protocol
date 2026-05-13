@@ -25,7 +25,6 @@ Example:
 - Added withdraw coverage for 0%, 25%, 50%, 100%, partial, full, and unauthorized claims.
 -->
 
-- 
 
 ## Key Design Decisions
 
@@ -51,7 +50,6 @@ Example:
 - Used one test file per instruction to keep acceptance criteria easier to locate.
 -->
 
-- 
 
 ## Changelog
 
@@ -84,7 +82,6 @@ Example:
 - withdraw: rejects unauthorized signer and nothing-to-claim cases.
 -->
 
-- 
 
 ## Screenshots / Logs
 
@@ -101,7 +98,6 @@ Example:
 - What prevents unauthorized withdrawal or creator clawback?
 -->
 
-- 
 
 ## Risk Notes
 
@@ -123,7 +119,6 @@ Example:
 - Devnet transaction signatures:
 -->
 
-- 
 
 ## Reviewer Checklist
 
