@@ -146,7 +146,7 @@ describe("token-distribution-protocol — Week 4", () => {
     const { streamId, total, pct, cancelable = true } = opts;
     const recipient = Keypair.generate();
     const now = Math.floor(Date.now() / 1000);
-    const elapsed = Math.floor((pct / 100) * 100 * DAY);
+    const elapsed = Math.floor(pct * DAY);
     const start = now - elapsed;
     const end = start + 100 * DAY;
 
