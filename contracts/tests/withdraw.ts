@@ -111,7 +111,7 @@ describe("withdraw", () => {
     const now = Math.floor(Date.now() / 1000);
     const streamId = new BN(streamCounter++);
     const elapsed = Math.floor((pct / 100) * 100 * DAY);
-    const startTime = now - elapsed;
+    const startTime = pct === 0 ? now + DAY : now - elapsed;
     const endTime = startTime + 100 * DAY;
     const [streamData] = streamDataPda(
       program.programId,
@@ -131,7 +131,7 @@ describe("withdraw", () => {
         0,
         true
       )
-      .accounts({
+      .accountsPartial({
         creator: creator.publicKey,
         recipient: recipient.publicKey,
         streamData,
@@ -169,7 +169,7 @@ describe("withdraw", () => {
   ) {
     return program.methods
       .withdraw()
-      .accounts({
+      .accountsPartial({
         recipient: recipient.publicKey,
         creator: creator.publicKey,
         streamData,
@@ -303,7 +303,7 @@ describe("withdraw", () => {
     try {
       await program.methods
         .withdraw()
-        .accounts({
+        .accountsPartial({
           recipient: attacker.publicKey,
           creator: creator.publicKey,
           streamData: stream.streamData,
