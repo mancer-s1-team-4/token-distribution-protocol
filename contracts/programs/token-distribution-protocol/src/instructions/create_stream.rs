@@ -1,9 +1,4 @@
-// Arya — owns the final Week 4 version of this instruction.
-// Alex — implemented a working version to unblock the withdraw/cancel test suite.
-//
-// This replaces the stub with real account initialization and token transfer
-// so integration tests can create live streams and test withdraw/cancel logic.
-// Arya can extend or override this implementation as needed.
+// Arya — Week 4 implementation.
 //
 // Logic:
 //   1. Validate: amount > 0, end > start, cliff within [start, end], stream_type valid.
