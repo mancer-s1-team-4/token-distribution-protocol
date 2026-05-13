@@ -74,6 +74,61 @@ impl StreamData {
     pub const STREAM_TYPE_MILESTONE: u8 = 2;
 
     pub const MAX_MILESTONES: u8 = 20;
+
+    // ── Vesting math ──────────────────────────────────────────────────────────
+    /// Returns total tokens vested up to `now` (not yet claimed).
+    ///
+    /// Formula (Linear / Cliff+Linear):
+    ///   vested = amount_total * elapsed / duration   — capped at amount_total
+    ///
+    /// Uses u128 intermediate values to prevent overflow on large amounts.
+    /// For Milestone streams, sums all verified milestone amounts.
+    ///
+    /// Edge cases:
+    ///   • now < cliff_time  → 0 (nothing unlocked yet)
+    ///   • now >= end_time   → amount_total (fully vested)
+    ///   • duration == 0     → amount_total (defensive guard)
+    pub fn calculate_vested(&self, now: i64) -> u64 {
+        match self.stream_type {
+            // ── Milestone ─────────────────────────────────────────────────────
+            Self::STREAM_TYPE_MILESTONE => {
+                self.milestones
+                    .iter()
+                    .filter(|m| m.is_verified)
+                    .map(|m| m.amount)
+                    .fold(0u64, |acc, a| acc.saturating_add(a))
+            }
+
+            // ── Linear and Cliff+Linear ────────────────────────────────────
+            _ => {
+                // Nothing vested before the cliff.
+                if now < self.cliff_time {
+                    return 0;
+                }
+                // Fully vested after end_time.
+                if now >= self.end_time {
+                    return self.amount_total;
+                }
+
+                let duration = (self.end_time - self.start_time) as u128;
+                // Guard against degenerate streams (start == end).
+                if duration == 0 {
+                    return self.amount_total;
+                }
+
+                let elapsed = (now - self.start_time).max(0) as u128;
+
+                // u128 prevents overflow: max u64 * max u64 = 3.4e38 < u128::MAX.
+                let vested = (self.amount_total as u128)
+                    .checked_mul(elapsed)
+                    .unwrap_or(u128::MAX)
+                    / duration;
+
+                // Cap at amount_total (saturating cast back to u64).
+                vested.min(self.amount_total as u128) as u64
+            }
+        }
+    }
 }
 
 // ── ProtocolState ─────────────────────────────────────────────────────────────
