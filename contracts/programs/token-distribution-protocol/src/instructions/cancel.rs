@@ -81,8 +81,6 @@ pub struct Cancel<'info> {
 
     /// Creator's ATA — receives unvested tokens returned from escrow.
     #[account(
-        init_if_needed,
-        payer = creator,
         associated_token::mint = mint,
         associated_token::authority = creator,
     )]
