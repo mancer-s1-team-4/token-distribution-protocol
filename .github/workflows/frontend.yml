@@ -1,0 +1,53 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+
+jobs:
+  build-and-lint:
+    name: Build and Lint
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./frontend
+        
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+          cache-dependency-path: 'frontend/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        # Use install instead of --frozen-lockfile if lockfile isn't committed yet, 
+        # but --frozen-lockfile is best practice for CI.
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
