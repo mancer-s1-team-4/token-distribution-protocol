@@ -368,6 +368,7 @@ describe("token-distribution-protocol — Week 4", () => {
   it("partial withdrawal: amount_claimed prevents double-spend", async () => {
     const { recipient, streamDataKey, escrowKey, recipientATA } =
       await makeStream({ streamId: 6000, total: 1_000_000, pct: 50 });
+    const MAX_SECOND_WITHDRAW_DRIFT = 10;
 
     // First withdraw — ~50%.
     await doWithdraw(recipient, streamDataKey, escrowKey, recipientATA);
@@ -380,10 +381,27 @@ describe("token-distribution-protocol — Week 4", () => {
     try {
       await doWithdraw(recipient, streamDataKey, escrowKey, recipientATA);
       const second = Number((await getAccount(connection, recipientATA)).amount);
-      assert.isAtMost(second, 1_000_000, "Total must not exceed amount_total");
-      console.log(`  Second withdraw: ${second - first} additional tokens (minor drift)`);
+      const extra = second - first;
+      assert.isAtMost(
+        extra,
+        MAX_SECOND_WITHDRAW_DRIFT,
+        `Expected second withdraw drift <= ${MAX_SECOND_WITHDRAW_DRIFT}, got ${extra}`
+      );
+      const streamAfter = await program.account.streamData.fetch(streamDataKey);
+      assert.equal(
+        streamAfter.amountClaimed.toNumber(),
+        second,
+        "StreamData.amount_claimed must track recipient token balance"
+      );
+      console.log(`  Second withdraw drift: ${extra} tokens`);
     } catch (err: any) {
       assert.include(err.message ?? String(err), "NothingToClaim");
+      const streamAfter = await program.account.streamData.fetch(streamDataKey);
+      assert.equal(
+        streamAfter.amountClaimed.toNumber(),
+        first,
+        "StreamData.amount_claimed must remain unchanged when second withdraw fails"
+      );
       console.log("  ✓ Double-spend blocked: NothingToClaim");
     }
   });
