@@ -104,6 +104,8 @@ jobs:
         run: anchor keys sync
 
       - name: Build program
+        env:
+          CARGO_INCREMENTAL: "0"
         run: anchor build --provider.cluster localnet
 
       - name: Run anchor tests
