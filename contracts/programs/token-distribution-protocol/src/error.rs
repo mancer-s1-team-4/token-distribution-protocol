@@ -45,6 +45,18 @@ pub enum VestingError {
     #[msg("stream is already fully claimed")]
     StreamAlreadyComplete,
 
+    #[msg("stream has already been cancelled")]
+    AlreadyCancelled,
+
+    #[msg("stream is already fully vested and cannot be cancelled")]
+    FullyVested,
+
+    #[msg("stream has been cancelled")]
+    StreamExpired,
+
+    #[msg("no tokens are available to withdraw at this time")]
+    NothingToWithdraw,
+
     // ── verify_milestone validations ─────────────────────────────────────────
     #[msg("milestone index out of bounds")]
     InvalidMilestoneIndex,

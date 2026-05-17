@@ -40,8 +40,9 @@ pub struct Cancel<'info> {
     pub recipient: UncheckedAccount<'info>,
 
     /// The vesting schedule PDA.
-    /// Constraint: is_cancelable must be true — on-chain enforcement.
-    /// close = creator: rent lamports returned to the creator on successful cancel.
+    /// Constraints:
+    ///   is_cancelable        → StreamNotCancelable
+    ///   !is_cancelled        → AlreadyCancelled
     #[account(
         mut,
         seeds = [
@@ -55,7 +56,7 @@ pub struct Cancel<'info> {
         has_one = recipient @ VestingError::Unauthorized,
         has_one = mint @ VestingError::Unauthorized,
         constraint = stream_data.is_cancelable @ VestingError::StreamNotCancelable,
-        close = creator,
+        constraint = !stream_data.is_cancelled @ VestingError::AlreadyCancelled,
     )]
     pub stream_data: Account<'info, StreamData>,
 
@@ -106,6 +107,13 @@ pub fn handler(ctx: Context<Cancel>) -> Result<()> {
     let bump_arr = [ctx.accounts.stream_data.bump];
 
     let vested = ctx.accounts.stream_data.calculate_vested(now);
+
+    // Cannot cancel a fully-vested stream — all tokens already belong to recipient.
+    require!(
+        vested < ctx.accounts.stream_data.amount_total,
+        VestingError::FullyVested
+    );
+
     let earned_unclaimed = vested.saturating_sub(ctx.accounts.stream_data.amount_claimed);
     let unvested = ctx.accounts.stream_data.amount_total.saturating_sub(vested);
 
@@ -161,7 +169,9 @@ pub fn handler(ctx: Context<Cancel>) -> Result<()> {
         signer_seeds,
     ))?;
 
-    // stream_data is closed by Anchor via close = creator on the account constraint.
+    // ── 5. Mark stream as cancelled ───────────────────────────────────────────
+    // stream_data is kept alive so callers can detect the cancelled state.
+    ctx.accounts.stream_data.is_cancelled = true;
 
     msg!(
         "cancel: {} tokens → recipient, {} tokens → creator",
