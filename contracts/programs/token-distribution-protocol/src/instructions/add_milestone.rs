@@ -75,12 +75,33 @@ pub fn handler(
 ) -> Result<()> {
     let stream = &mut ctx.accounts.stream_data;
 
+    // Guard: no milestones can be added once the recipient has started interacting
+    // with the stream. This prevents the creator from reshaping the vesting schedule
+    // after tokens have already begun flowing to the recipient.
+    require!(
+        stream.amount_claimed == 0 && stream.milestones.iter().all(|m| !m.is_verified),
+        VestingError::StreamAlreadyComplete
+    );
+
     stream.milestones.push(Milestone {
         amount,
         description_hash,
         is_verified: false,
         verifier,
     });
+
+    // Guard: cumulative milestone amounts must not exceed the escrow balance.
+    // An overfunded set would drain the escrow before all milestones can be claimed.
+    let milestone_total: u64 = stream
+        .milestones
+        .iter()
+        .map(|m| m.amount)
+        .fold(0u64, |acc, a| acc.saturating_add(a));
+    require!(
+        milestone_total <= stream.amount_total,
+        VestingError::MilestoneAmountMismatch
+    );
+
     stream.milestone_count = stream.milestones.len() as u8;
 
     msg!(

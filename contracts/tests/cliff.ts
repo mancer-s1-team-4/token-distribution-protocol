@@ -139,7 +139,7 @@ describe("cliff", () => {
     await fundSol(recipient.publicKey);
 
     const now    = Math.floor(Date.now() / 1000);
-    const start  = now - Math.floor((elapsedPct / 100) * 100 * DAY);
+    const start  = now - elapsedPct * DAY;
     const cliff  = start + CLIFF_PCT * DAY;
     const end    = start + 100 * DAY;
 
@@ -355,6 +355,7 @@ describe("cliff", () => {
         s.escrowTokenAccount,
         s.recipientTokenAccount
       );
+      assert.fail("Expected NothingToWithdraw");
     } catch (err: any) {
       assert.include(
         err.message ?? String(err),

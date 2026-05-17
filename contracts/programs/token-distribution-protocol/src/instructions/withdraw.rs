@@ -85,7 +85,7 @@ pub fn handler(ctx: Context<Withdraw>) -> Result<()> {
         .checked_sub(ctx.accounts.stream_data.amount_claimed)
         .unwrap_or(0);
 
-    require!(claimable > 0, VestingError::NothingToClaim);
+    require!(claimable > 0, VestingError::NothingToWithdraw);
 
     // Copy seed components into locals — they must outlive the signer_seeds slice.
     let creator_key = ctx.accounts.stream_data.creator;
