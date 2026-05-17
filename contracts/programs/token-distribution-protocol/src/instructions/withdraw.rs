@@ -40,6 +40,7 @@ pub struct Withdraw<'info> {
         bump = stream_data.bump,
         has_one = recipient @ VestingError::Unauthorized,
         has_one = mint @ VestingError::Unauthorized,
+        constraint = !stream_data.is_cancelled @ VestingError::StreamExpired,
     )]
     pub stream_data: Account<'info, StreamData>,
 
