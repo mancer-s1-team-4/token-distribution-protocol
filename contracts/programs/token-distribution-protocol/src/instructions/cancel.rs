@@ -21,9 +21,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{
-        close_account, transfer, CloseAccount, Mint, Token, TokenAccount, Transfer,
-    },
+    token::{transfer, Mint, Token, TokenAccount, Transfer},
 };
 
 use crate::{error::VestingError, state::StreamData};
@@ -158,19 +156,12 @@ pub fn handler(ctx: Context<Cancel>) -> Result<()> {
         )?;
     }
 
-    // ── 4. Close escrow token account — rent to creator ──────────────────────
-    close_account(CpiContext::new_with_signer(
-        ctx.accounts.token_program.to_account_info(),
-        CloseAccount {
-            account: ctx.accounts.escrow_token_account.to_account_info(),
-            destination: ctx.accounts.creator.to_account_info(),
-            authority: ctx.accounts.stream_data.to_account_info(),
-        },
-        signer_seeds,
-    ))?;
-
-    // ── 5. Mark stream as cancelled ───────────────────────────────────────────
-    // stream_data is kept alive so callers can detect the cancelled state.
+    // ── 4. Mark stream as cancelled ──────────────────────────────────────────
+    // Escrow is intentionally left open (empty) so subsequent cancel/withdraw
+    // calls can still load it as a valid TokenAccount. The is_cancelled guard
+    // on stream_data fires first, returning AlreadyCancelled or StreamExpired
+    // before any token operation is attempted. Closing the escrow here would
+    // cause account-load errors on those subsequent calls before the guard fires.
     ctx.accounts.stream_data.is_cancelled = true;
 
     msg!(
