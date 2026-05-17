@@ -424,7 +424,45 @@ describe("milestone", () => {
     }
   });
 
-  // ── Test 7: verify on cancelled stream → StreamExpired ──────────────────────
+  // ── Test 7: non-signer verifier — Anchor rejects unsigned transaction ────────
+  // Documents the guarantee that Anchor's Signer<'info> constraint on the
+  // verifier account blocks any transaction where the verifier does not sign.
+  it("non-signer verifier: Anchor rejects transaction missing verifier signature", async () => {
+    const verifier = Keypair.generate();
+    await fundSol(verifier.publicKey);
+
+    const s = await createMilestoneStream([
+      { amount: TOTAL, verifier },
+    ]);
+
+    try {
+      // Pass the correct verifier pubkey but omit it from signers — Anchor
+      // requires all Signer<'info> accounts to sign the transaction.
+      await program.methods
+        .verifyMilestone(0)
+        .accountsPartial({
+          verifier:     verifier.publicKey,
+          creator:      creator.publicKey,
+          recipient:    s.recipient.publicKey,
+          streamData:   s.streamData,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([]) // intentionally omit verifier
+        .rpc();
+      assert.fail("Expected missing-signature error");
+    } catch (err: any) {
+      const msg = (err.message ?? String(err)).toLowerCase();
+      assert.ok(
+        msg.includes("signature") ||
+        msg.includes("signer") ||
+        msg.includes("unknown signer") ||
+        msg.includes("missing"),
+        `Expected signature failure, got: ${err.message}`
+      );
+    }
+  });
+
+  // ── Test 9: verify on cancelled stream → StreamExpired ──────────────────────
   it("verify on cancelled stream: returns StreamExpired", async () => {
     const verifier = Keypair.generate();
     await fundSol(verifier.publicKey);

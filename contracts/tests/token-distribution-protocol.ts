@@ -7,7 +7,7 @@
  *   ✅ Linear unlock: unlocked = total * (elapsed / duration)
  *   ✅ withdraw: recipient claims unlocked tokens at any time
  *   ✅ Partial withdrawals work
- *   ✅ Cannot withdraw more than unlocked → NothingToClaim
+ *   ✅ Cannot withdraw more than unlocked → NothingToWithdraw
  *   ✅ Cannot withdraw from someone else's stream → Unauthorized / seeds fail
  *   ✅ Vesting checked at 0%, 25%, 50%, 100%
  *
@@ -258,7 +258,7 @@ describe("token-distribution-protocol — Week 4", () => {
   // ─────────────────────────────────────────────────────────────────────────
   // Test 3: 0% vested — withdraw before any tokens unlock
   // ─────────────────────────────────────────────────────────────────────────
-  it("withdraw at 0%: NothingToClaim when stream starts in the future", async () => {
+  it("withdraw at 0%: NothingToWithdraw when stream starts in the future", async () => {
     const recipient = Keypair.generate();
     const streamId = new BN(2000);
     const now = Math.floor(Date.now() / 1000);
@@ -308,11 +308,11 @@ describe("token-distribution-protocol — Week 4", () => {
 
     try {
       await doWithdraw(recipient, streamDataKey, escrowKey, recipientATA);
-      assert.fail("Expected NothingToClaim");
+      assert.fail("Expected NothingToWithdraw");
     } catch (err: any) {
       const msg = err.message ?? String(err);
-      assert.include(msg, "NothingToClaim");
-      console.log("  ✓ NothingToClaim at 0% vesting");
+      assert.include(msg, "NothingToWithdraw");
+      console.log("  ✓ NothingToWithdraw at 0% vesting");
     }
   });
 
@@ -375,7 +375,7 @@ describe("token-distribution-protocol — Week 4", () => {
     const first = Number((await getAccount(connection, recipientATA)).amount);
     console.log(`  First withdraw: ${first} tokens`);
 
-    // Second withdraw immediately — should throw NothingToClaim (no new time elapsed).
+    // Second withdraw immediately — should throw NothingToWithdraw (no new time elapsed).
     // (Up to ~1 second of block-time may pass, unlocking at most 1 extra token
     //  per second on a 100-day stream: 1M / (100*86400) ≈ 0.1 token/s → likely 0.)
     try {
@@ -395,14 +395,14 @@ describe("token-distribution-protocol — Week 4", () => {
       );
       console.log(`  Second withdraw drift: ${extra} tokens`);
     } catch (err: any) {
-      assert.include(err.message ?? String(err), "NothingToClaim");
+      assert.include(err.message ?? String(err), "NothingToWithdraw");
       const streamAfter = await program.account.streamData.fetch(streamDataKey);
       assert.equal(
         streamAfter.amountClaimed.toNumber(),
         first,
         "StreamData.amount_claimed must remain unchanged when second withdraw fails"
       );
-      console.log("  ✓ Double-spend blocked: NothingToClaim");
+      console.log("  ✓ Double-spend blocked: NothingToWithdraw");
     }
   });
 
