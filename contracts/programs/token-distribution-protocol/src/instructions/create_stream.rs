@@ -136,6 +136,7 @@ pub fn handler(
     stream.end_time = end_time;
     stream.stream_type = stream_type;
     stream.is_cancelable = is_cancelable;
+    stream.is_cancelled = false;
     stream.milestone_count = 0;
     stream.milestones = Vec::new();
     stream.bump = bump;
