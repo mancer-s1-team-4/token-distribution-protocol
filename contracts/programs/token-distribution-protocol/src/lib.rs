@@ -19,7 +19,7 @@ pub mod token_distribution_protocol {
         instructions::initialize::handler(ctx)
     }
 
-    // ── create_stream (Arya — Week 4 / Alex — working impl for test unblocking) ──
+    // ── create_stream (Arya — Week 4 implementation) ─────────────────────────
     /// Locks tokens in a PDA-owned escrow and writes the vesting schedule.
     #[allow(clippy::too_many_arguments)]
     pub fn create_stream(
@@ -44,7 +44,7 @@ pub mod token_distribution_protocol {
         )
     }
 
-    // ── withdraw (Alex — Week 4 implementation) ──────────────────────────────
+    // ── withdraw (Week 4 implementation) ─────────────────────────────────────
     /// Recipient claims vested tokens. Calculates claimable = vested - amount_claimed.
     pub fn withdraw(ctx: Context<Withdraw>) -> Result<()> {
         instructions::withdraw::handler(ctx)
