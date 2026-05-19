@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Themis is a token distribution protocol that lets teams schedule automatic token payments to contributors, enforced entirely on-chain." />
+  <title>Themis - Token Distribution Protocol</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Space Grotesk', 'sans-serif'],
+            sans:    ['Inter', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    :root {
+      --bg:          #060910;
+      --bg-card:     rgba(9, 15, 28, 0.75);
+      --border:      rgba(26, 42, 66, 0.85);
+      --text:        #e6ecf6;
+      --muted:       #5a7090;
+      --accent:      #4f7fff;
+      --accent-dim:  rgba(79, 127, 255, 0.1);
+      --accent-glow: rgba(79, 127, 255, 0.22);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html  { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+    body  { overflow-x: hidden; }
+    h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+
+    /* Dot grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(79,127,255,0.055) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    nav, section, footer { position: relative; z-index: 1; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(79,127,255,0.18); border-radius: 3px; }
+
+    /* ---- Navbar ---- */
+    #navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      transition: background 0.4s, border-bottom-color 0.4s;
+      border-bottom: 1px solid transparent;
+    }
+    #navbar.scrolled {
+      background: rgba(6, 9, 16, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom-color: rgba(26, 42, 66, 0.6);
+    }
+    .nav-link {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-link:hover, .nav-link:focus { color: var(--text); }
+
+    /* ---- Buttons ---- */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+    .btn-primary:hover {
+      background: #3a6bf0;
+      box-shadow: 0 4px 28px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-outline:hover {
+      border-color: rgba(79,127,255,0.4);
+      background: rgba(79,127,255,0.06);
+    }
+
+    /* ---- Input ---- */
+    .input {
+      background: rgba(9, 15, 28, 0.85);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+    .input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+    .input::placeholder { color: var(--muted); }
+
+    /* ---- Cards ---- */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* ---- Icon box ---- */
+    .icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(79,127,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ---- Step watermark ---- */
+    .step-num {
+      position: absolute;
+      top: -6px;
+      right: 18px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 5.5rem;
+      font-weight: 700;
+      color: rgba(79,127,255,0.045);
+      line-height: 1;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* ---- Scroll reveal ---- */
+    .reveal {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+    .d1 { transition-delay: 0.10s; }
+    .d2 { transition-delay: 0.20s; }
+    .d3 { transition-delay: 0.30s; }
+    .d4 { transition-delay: 0.40s; }
+    .d5 { transition-delay: 0.50s; }
+
+    /* ---- Gradient divider ---- */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(79,127,255,0.22) 50%, transparent);
+      max-width: 1152px;
+      margin: 0 auto;
+    }
+
+    /* ---- Badge ---- */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 13px;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      border: 1px solid rgba(79,127,255,0.25);
+      background: rgba(79,127,255,0.07);
+      color: #86a8ff;
+    }
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: blink 2.2s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.35; }
+    }
+
+    /* ---- Hero orbs ---- */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(70px);
+      pointer-events: none;
+    }
+    #orb1 {
+      width: 680px;
+      height: 680px;
+      background: radial-gradient(circle, rgba(79,127,255,0.09) 0%, transparent 65%);
+      top: -220px;
+      left: 50%;
+      transform: translateX(-50%);
+      will-change: transform;
+    }
+    #orb2 {
+      width: 380px;
+      height: 380px;
+      background: radial-gradient(circle, rgba(110, 60, 230, 0.07) 0%, transparent 70%);
+      top: 40px;
+      right: -60px;
+    }
+
+    /* ---- FAQ ---- */
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.36s ease;
+    }
+    .faq-answer.open { max-height: 280px; }
+    .faq-chevron { transition: transform 0.3s ease; color: var(--muted); flex-shrink: 0; }
+    .faq-item.faq-active .faq-chevron { transform: rotate(180deg); }
+
+    /* ---- Footer link ---- */
+    .footer-link {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-link:hover { color: var(--text); }
+
+    /* ---- Reduced motion ---- */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .btn-primary:hover { transform: none; }
+      #orb1 { transition: none !important; }
+      * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+    }
+
+    /* ---- Mobile ---- */
+    #mobile-menu { display: none; }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============================================================
+       NAVBAR
+  ============================================================ -->
+  <nav id="navbar" aria-label="Main navigation">
+    <div style="max-width:1152px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;">
+
+      <!-- Logo -->
+      <a href="#" style="display:flex;align-items:center;gap:10px;text-decoration:none;" aria-label="Themis home">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+          <circle cx="13" cy="3.5" r="1.8" fill="#4f7fff"/>
+          <line x1="13" y1="5.3" x2="13" y2="21" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+          <line x1="3.5" y1="9" x2="22.5" y2="9" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M1 9 Q4 15.5 7 9" fill="none" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M19 9 Q22 15.5 25 9" fill="none" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+          <line x1="8" y1="21" x2="18" y2="21" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:17px;color:var(--text);letter-spacing:-0.02em;">Themis</span>
+      </a>
+
+      <!-- Desktop nav -->
+      <div style="display:flex;align-items:center;gap:32px;" class="hidden md:flex">
+        <a href="#how-it-works" class="nav-link">How it works</a>
+        <a href="#features"     class="nav-link">Features</a>
+        <a href="#faq"          class="nav-link">FAQ</a>
+      </div>
+
+      <!-- CTA + mobile toggle -->
+      <div style="display:flex;align-items:center;gap:10px;">
+        <a href="#waitlist" class="btn-primary" style="padding:9px 20px;font-size:0.875rem;">
+          Join the waitlist
+        </a>
+        <button
+          id="menu-toggle"
+          class="md:hidden btn-outline"
+          style="padding:8px;border-radius:8px;"
+          aria-label="Toggle menu"
+          aria-expanded="false"
+        >
+          <svg id="icon-open"  width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+            <line x1="3" y1="6"  x2="17" y2="6" />
+            <line x1="3" y1="10" x2="17" y2="10"/>
+            <line x1="3" y1="14" x2="17" y2="14"/>
+          </svg>
+          <svg id="icon-close" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="display:none;">
+            <line x1="5" y1="5"  x2="15" y2="15"/>
+            <line x1="15" y1="5" x2="5"  y2="15"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" style="background:rgba(6,9,16,0.97);border-top:1px solid var(--border);padding:20px 24px;flex-direction:column;gap:20px;">
+      <a href="#how-it-works" class="nav-link" onclick="closeMenu()">How it works</a>
+      <a href="#features"     class="nav-link" onclick="closeMenu()">Features</a>
+      <a href="#faq"          class="nav-link" onclick="closeMenu()">FAQ</a>
+      <a href="#waitlist" class="btn-primary" style="padding:11px 20px;font-size:0.875rem;text-align:center;" onclick="closeMenu()">
+        Join the waitlist
+      </a>
+    </div>
+  </nav>
+
+
+  <!-- ============================================================
+       HERO
+  ============================================================ -->
+  <section id="hero" style="position:relative;overflow:hidden;padding:144px 24px 104px;">
+    <div class="orb" id="orb1"></div>
+    <div class="orb" id="orb2"></div>
+
+    <div style="max-width:760px;margin:0 auto;text-align:center;position:relative;z-index:2;">
+
+      <div class="badge" style="margin-bottom:28px;">
+        <span class="badge-dot"></span>
+        Built on Solana
+      </div>
+
+      <h1 style="font-size:clamp(2.8rem,7.5vw,5.2rem);font-weight:700;line-height:1.04;letter-spacing:-0.038em;color:var(--text);margin-bottom:22px;">
+        Token distribution,<br/>done right.
+      </h1>
+
+      <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:var(--muted);line-height:1.78;max-width:500px;margin:0 auto 44px;font-weight:400;">
+        Themis lets teams schedule automatic token payments to contributors.
+        Set the rules once and the protocol enforces them on-chain.
+      </p>
+
+      <!-- Waitlist form -->
+      <form
+        id="hero-form"
+        style="display:flex;gap:8px;max-width:440px;margin:0 auto 18px;flex-wrap:wrap;"
+        onsubmit="handleForm(event,'hero-form','hero-success')"
+      >
+        <input
+          type="email"
+          placeholder="Work email address"
+          required
+          class="input"
+          style="padding:13px 16px;flex:1;min-width:200px;"
+          aria-label="Email address for waitlist"
+        />
+        <button type="submit" class="btn-primary" style="padding:13px 22px;font-size:0.9rem;" id="hero-btn">
+          Join the waitlist
+        </button>
+      </form>
+      <p id="hero-success" style="display:none;color:#86a8ff;font-size:0.875rem;margin-bottom:18px;">
+        You are on the list. We will be in touch soon.
+      </p>
+
+      <p style="font-size:0.8rem;color:var(--muted);">
+        <span style="color:var(--text);font-weight:500;">140+ teams</span> already on the waitlist
+      </p>
+    </div>
+  </section>
+
+
+  <div class="divider"></div>
+
+
+  <!-- ============================================================
+       HOW IT WORKS
+  ============================================================ -->
+  <section id="how-it-works" style="padding:96px 24px;">
+    <div style="max-width:1152px;margin:0 auto;">
+
+      <div style="text-align:center;margin-bottom:64px;" class="reveal">
+        <p style="font-size:0.72rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">How it works</p>
+        <h2 style="font-size:clamp(1.9rem,4.5vw,2.8rem);font-weight:700;letter-spacing:-0.028em;color:var(--text);line-height:1.08;">
+          From setup to payout in three steps
+        </h2>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
+
+        <div class="card reveal d1" style="border-radius:16px;padding:36px 32px;position:relative;overflow:hidden;">
+          <span class="step-num">1</span>
+          <div class="icon-box" style="margin-bottom:24px;">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="10" cy="10" r="8"/>
+              <line x1="10" y1="6"  x2="10" y2="14"/>
+              <line x1="6"  y1="10" x2="14" y2="10"/>
+            </svg>
+          </div>
+          <h3 style="font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:10px;letter-spacing:-0.01em;">Create a stream</h3>
+          <p style="font-size:0.875rem;color:var(--muted);line-height:1.78;">
+            Enter a recipient wallet, a token amount, and the vesting period.
+            No technical knowledge required on your end.
+          </p>
+        </div>
+
+        <div class="card reveal d2" style="border-radius:16px;padding:36px 32px;position:relative;overflow:hidden;">
+          <span class="step-num">2</span>
+          <div class="icon-box" style="margin-bottom:24px;">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="10" cy="10" r="8"/>
+              <polyline points="10 6 10 10 13 12.5"/>
+            </svg>
+          </div>
+          <h3 style="font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:10px;letter-spacing:-0.01em;">Tokens vest on schedule</h3>
+          <p style="font-size:0.875rem;color:var(--muted);line-height:1.78;">
+            Smart contracts release tokens over time according to the schedule you defined.
+            Fully automatic, no manual transfers needed.
+          </p>
+        </div>
+
+        <div class="card reveal d3" style="border-radius:16px;padding:36px 32px;position:relative;overflow:hidden;">
+          <span class="step-num">3</span>
+          <div class="icon-box" style="margin-bottom:24px;">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4" y1="10" x2="16" y2="10"/>
+              <polyline points="11 5 16 10 11 15"/>
+            </svg>
+          </div>
+          <h3 style="font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:10px;letter-spacing:-0.01em;">Recipients claim anytime</h3>
+          <p style="font-size:0.875rem;color:var(--muted);line-height:1.78;">
+            Contributors connect their wallet and withdraw whatever has vested at any time,
+            without waiting for your approval.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <div class="divider"></div>
+
+
+  <!-- ============================================================
+       FEATURES
+  ============================================================ -->
+  <section id="features" style="padding:96px 24px;">
+    <div style="max-width:1152px;margin:0 auto;">
+
+      <div style="text-align:center;margin-bottom:64px;" class="reveal">
+        <p style="font-size:0.72rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Features</p>
+        <h2 style="font-size:clamp(1.9rem,4.5vw,2.8rem);font-weight:700;letter-spacing:-0.028em;color:var(--text);line-height:1.08;">
+          Built for teams that need control
+        </h2>
+        <p style="font-size:1rem;color:var(--muted);max-width:460px;margin:16px auto 0;line-height:1.75;">
+          Everything required to distribute tokens fairly, without the operational overhead.
+        </p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+
+        <div class="card reveal" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="14" height="14" rx="2"/>
+              <line x1="3" y1="9" x2="17" y2="9"/>
+              <line x1="9" y1="9" x2="9" y2="17"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Cliff and linear vesting</h3>
+            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
+              Set a waiting period before vesting begins, then release tokens gradually over the remaining schedule.
+            </p>
+          </div>
+        </div>
+
+        <div class="card reveal d1" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="4"  y1="4"  x2="16" y2="16"/>
+              <line x1="16" y1="4"  x2="4"  y2="16"/>
+              <circle cx="10" cy="10" r="8"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Instant cancellation</h3>
+            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
+              Cancel any stream at any time. Tokens that have already vested stay with the recipient.
+              The rest return to you immediately.
+            </p>
+          </div>
+        </div>
+
+        <div class="card reveal d2" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 2 L3 6 V10 C3 14.4 6.2 17.8 10 18.5 C13.8 17.8 17 14.4 17 10 V6 Z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Non-custodial</h3>
+            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
+              Themis never holds your tokens. Everything is locked in a smart contract
+              that only the defined rules can unlock.
+            </p>
+          </div>
+        </div>
+
+        <div class="card reveal d3" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="10 2 4 14 10 12 16 14"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Built on Solana</h3>
+            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
+              Transactions settle in under a second for a fraction of a cent.
+              No expensive gas fees or long confirmation times.
+            </p>
+          </div>
+        </div>
+
+        <div class="card reveal d4" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="10" cy="10" r="8"/>
+              <line x1="10" y1="6.5" x2="10" y2="10.5"/>
+              <circle cx="10" cy="13.5" r="0.6" fill="#4f7fff" stroke="none"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Fully transparent</h3>
+            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
+              Every stream is recorded on-chain. Any party can verify the schedule,
+              the balance, and the full history at any time.
+            </p>
+          </div>
+        </div>
+
+        <div class="card reveal d5" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
+          <div class="icon-box">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="4 10 8 14 16 6"/>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Simple to set up</h3>
+            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
+              No command line, no configuration files. Connect a wallet, fill in the details,
+              and the stream is live in under a minute.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <div class="divider"></div>
+
+
+  <!-- ============================================================
+       FAQ
+  ============================================================ -->
+  <section id="faq" style="padding:96px 24px;">
+    <div style="max-width:700px;margin:0 auto;">
+
+      <div style="text-align:center;margin-bottom:56px;" class="reveal">
+        <p style="font-size:0.72rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">FAQ</p>
+        <h2 style="font-size:clamp(1.9rem,4.5vw,2.8rem);font-weight:700;letter-spacing:-0.028em;color:var(--text);line-height:1.08;">
+          Common questions
+        </h2>
+      </div>
+
+      <div class="card reveal" style="border-radius:16px;overflow:hidden;">
+
+        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
+            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">What is token vesting?</span>
+            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+              <polyline points="4 7 9 12 14 7"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
+              Vesting is a way to distribute tokens gradually over time rather than all at once.
+              A contributor might be entitled to 10,000 tokens over two years, receiving a portion
+              each month as they continue contributing. It is standard practice in both traditional
+              equity compensation and token-based organizations.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
+            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">Do I need to understand blockchain to use this?</span>
+            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+              <polyline points="4 7 9 12 14 7"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
+              No. Themis is designed to feel like a standard web application. You will need a
+              Solana wallet to sign transactions, but the interface does not require you to
+              understand how the underlying protocol works.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
+            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">What happens when a stream is cancelled?</span>
+            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+              <polyline points="4 7 9 12 14 7"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
+              When you cancel a stream, tokens that have already vested remain with the recipient
+              and can still be claimed. Any tokens that had not yet vested are returned to the wallet
+              that created the stream. The cancellation is instant and settled on-chain.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
+            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">What is a cliff period?</span>
+            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+              <polyline points="4 7 9 12 14 7"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
+              A cliff is a mandatory waiting period before any tokens begin vesting.
+              For example, a one-year cliff means the recipient receives nothing for the first year,
+              then vesting starts. This is common in contributor agreements to ensure commitment
+              before rewards are distributed.
+            </p>
+          </div>
+        </div>
+
+        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
+            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">What tokens does Themis support?</span>
+            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+              <polyline points="4 7 9 12 14 7"/>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
+              Themis supports any SPL token on Solana. That includes USDC, wrapped SOL, and any
+              custom project token that follows the standard SPL token format.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <div class="divider"></div>
+
+
+  <!-- ============================================================
+       WAITLIST CTA
+  ============================================================ -->
+  <section id="waitlist" style="padding:96px 24px 112px;">
+    <div style="max-width:600px;margin:0 auto;text-align:center;" class="reveal">
+      <h2 style="font-size:clamp(2rem,5.5vw,3.2rem);font-weight:700;letter-spacing:-0.032em;color:var(--text);line-height:1.08;margin-bottom:16px;">
+        Ready to simplify token distribution?
+      </h2>
+      <p style="font-size:1rem;color:var(--muted);line-height:1.75;margin-bottom:40px;">
+        Join the waitlist and get early access when Themis opens to teams.
+      </p>
+
+      <form
+        id="cta-form"
+        style="display:flex;gap:8px;max-width:420px;margin:0 auto;flex-wrap:wrap;"
+        onsubmit="handleForm(event,'cta-form','cta-success')"
+      >
+        <input
+          type="email"
+          placeholder="Work email address"
+          required
+          class="input"
+          style="padding:13px 16px;flex:1;min-width:200px;"
+          aria-label="Email address for waitlist"
+        />
+        <button type="submit" class="btn-primary" style="padding:13px 22px;font-size:0.9rem;" id="cta-btn">
+          Get early access
+        </button>
+      </form>
+      <p id="cta-success" style="display:none;color:#86a8ff;font-size:0.875rem;margin-top:14px;">
+        You are on the list. We will be in touch soon.
+      </p>
+    </div>
+  </section>
+
+
+  <!-- ============================================================
+       FOOTER
+  ============================================================ -->
+  <footer style="border-top:1px solid var(--border);padding:36px 24px;">
+    <div style="max-width:1152px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;">
+
+      <div style="display:flex;align-items:center;gap:9px;">
+        <svg width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+          <circle cx="13" cy="3.5" r="1.8" fill="#4f7fff"/>
+          <line x1="13" y1="5.3" x2="13" y2="21" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+          <line x1="3.5" y1="9" x2="22.5" y2="9" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M1 9 Q4 15.5 7 9" fill="none" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M19 9 Q22 15.5 25 9" fill="none" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+          <line x1="8" y1="21" x2="18" y2="21" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--muted);">Themis</span>
+      </div>
+
+      <p style="font-size:0.78rem;color:var(--muted);">Token distribution protocol. Built on Solana.</p>
+
+      <div style="display:flex;gap:24px;">
+        <a href="#" class="footer-link">Docs</a>
+        <a href="#" class="footer-link">GitHub</a>
+        <a href="#" class="footer-link">Twitter</a>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- ============================================================
+       SCRIPTS
+  ============================================================ -->
+  <script>
+    // Navbar scroll class
+    var navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', function () {
+      navbar.classList.toggle('scrolled', window.scrollY > 24);
+    }, { passive: true });
+
+    // Hero orb parallax + mouse follow
+    var orb1      = document.getElementById('orb1');
+    var noMotion  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var scrollTop = 0;
+    var mouseOffX = 0;
+    var mouseOffY = 0;
+
+    function updateOrb() {
+      if (!orb1 || noMotion) return;
+      var tx = -50 + (mouseOffX * 0.018);
+      var ty = (scrollTop * 0.22) + (mouseOffY * 0.010);
+      orb1.style.transform = 'translateX(calc(' + tx + '% + 0px)) translateY(' + ty + 'px)';
+    }
+
+    window.addEventListener('scroll', function () {
+      scrollTop = window.scrollY;
+      updateOrb();
+    }, { passive: true });
+
+    window.addEventListener('mousemove', function (e) {
+      mouseOffX = e.clientX - window.innerWidth  / 2;
+      mouseOffY = e.clientY - window.innerHeight / 2;
+      updateOrb();
+    }, { passive: true });
+
+    // Scroll reveal
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) entry.target.classList.add('in');
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -36px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(function (el) { observer.observe(el); });
+
+    // FAQ accordion
+    function toggleFaq(item) {
+      var answer = item.querySelector('.faq-answer');
+      var isOpen = item.classList.contains('faq-active');
+
+      document.querySelectorAll('.faq-item').forEach(function (i) {
+        i.classList.remove('faq-active');
+        i.querySelector('.faq-answer').classList.remove('open');
+      });
+
+      if (!isOpen) {
+        item.classList.add('faq-active');
+        answer.classList.add('open');
+      }
+    }
+
+    // Waitlist form
+    function handleForm(event, formId, successId) {
+      event.preventDefault();
+      var form    = document.getElementById(formId);
+      var success = document.getElementById(successId);
+      var btn     = form.querySelector('button[type="submit"]');
+
+      btn.disabled    = true;
+      btn.textContent = 'Joining...';
+
+      setTimeout(function () {
+        form.style.display    = 'none';
+        success.style.display = 'block';
+      }, 700);
+    }
+
+    // Mobile menu
+    var menuToggle = document.getElementById('menu-toggle');
+    var mobileMenu = document.getElementById('mobile-menu');
+    var iconOpen   = document.getElementById('icon-open');
+    var iconClose  = document.getElementById('icon-close');
+    var menuOpen   = false;
+
+    menuToggle.addEventListener('click', function () {
+      menuOpen = !menuOpen;
+      mobileMenu.style.display = menuOpen ? 'flex' : 'none';
+      iconOpen.style.display   = menuOpen ? 'none' : 'block';
+      iconClose.style.display  = menuOpen ? 'block' : 'none';
+      menuToggle.setAttribute('aria-expanded', String(menuOpen));
+    });
+
+    function closeMenu() {
+      menuOpen = false;
+      mobileMenu.style.display = 'none';
+      iconOpen.style.display   = 'block';
+      iconClose.style.display  = 'none';
+      menuToggle.setAttribute('aria-expanded', 'false');
+    }
+  </script>
+
+</body>
+</html>
