@@ -1,593 +1,688 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Themis is a token distribution protocol that lets teams schedule automatic token payments to contributors, enforced entirely on-chain." />
+  <meta name="description" content="Themis is a token distribution protocol for teams scheduling on-chain token payments to contributors." />
   <title>Themis - Token Distribution Protocol</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
-    rel="stylesheet"
-  />
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            heading: ['Space Grotesk', 'sans-serif'],
-            sans:    ['Inter', 'sans-serif'],
-          },
-        },
-      },
-    };
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400;1,9..144,500&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
 
   <style>
     :root {
-      --bg:          #060910;
-      --bg-card:     rgba(9, 15, 28, 0.75);
-      --border:      rgba(26, 42, 66, 0.85);
-      --text:        #e6ecf6;
-      --muted:       #5a7090;
-      --accent:      #4f7fff;
-      --accent-dim:  rgba(79, 127, 255, 0.1);
-      --accent-glow: rgba(79, 127, 255, 0.22);
+      --bg:      #06060B;
+      --bg2:     rgba(255,255,255,0.022);
+      --border:  rgba(255,255,255,0.068);
+      --text:    #F0EDE6;
+      --muted:   #4A4A60;
+      --acc:     #635BFF;
+      --acc-g:   rgba(99,91,255,0.18);
+      --gold:    #C9A45A;
+      --r:       1200px;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html  { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
-    body  { overflow-x: hidden; }
-    h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; }
+    html { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+    body { overflow-x: hidden; }
 
-    /* Dot grid background */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: radial-gradient(circle, rgba(79,127,255,0.055) 1px, transparent 1px);
-      background-size: 40px 40px;
-      pointer-events: none;
-      z-index: 0;
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(99,91,255,0.3); border-radius: 2px; }
+
+    /* ---- SHARED LAYOUT ---- */
+    .w { max-width: var(--r); margin: 0 auto; padding: 0 48px; position: relative; z-index: 2; }
+
+    /* ---- PROGRESS BAR ---- */
+    #prog {
+      position: fixed; top: 0; left: 0; height: 2px;
+      background: var(--acc); width: 0%; z-index: 600;
+      transition: width 0.08s linear;
     }
 
-    nav, section, footer { position: relative; z-index: 1; }
+    /* ---- CANVAS ---- */
+    #cvs {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      z-index: 0; pointer-events: none; opacity: 0.5;
+    }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: rgba(79,127,255,0.18); border-radius: 3px; }
+    section, nav, footer { position: relative; z-index: 1; }
 
-    /* ---- Navbar ---- */
-    #navbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      transition: background 0.4s, border-bottom-color 0.4s;
+    /* ---- NAV ---- */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; height: 66px;
+      z-index: 400; transition: background 0.5s, border-color 0.5s;
       border-bottom: 1px solid transparent;
     }
-    #navbar.scrolled {
-      background: rgba(6, 9, 16, 0.88);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom-color: rgba(26, 42, 66, 0.6);
+    #nav.on {
+      background: rgba(6,6,11,0.9);
+      backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px);
+      border-color: var(--border);
     }
-    .nav-link {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .nav-link:hover, .nav-link:focus { color: var(--text); }
+    #nav .w { height: 66px; display: flex; align-items: center; justify-content: space-between; }
 
-    /* ---- Buttons ---- */
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-weight: 500;
-      font-family: 'Inter', sans-serif;
-      cursor: pointer;
-      text-decoration: none;
-      transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
-      white-space: nowrap;
-    }
-    .btn-primary:hover {
-      background: #3a6bf0;
-      box-shadow: 0 4px 28px var(--accent-glow);
-      transform: translateY(-1px);
-    }
-    .btn-primary:active { transform: translateY(0); }
-
-    .btn-outline {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-weight: 500;
-      font-family: 'Inter', sans-serif;
-      cursor: pointer;
-      text-decoration: none;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .btn-outline:hover {
-      border-color: rgba(79,127,255,0.4);
-      background: rgba(79,127,255,0.06);
+    .logo {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+      font-size: 0.95rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--gold); text-decoration: none;
     }
 
-    /* ---- Input ---- */
-    .input {
-      background: rgba(9, 15, 28, 0.85);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 8px;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.9rem;
-      outline: none;
+    .nl { display: flex; gap: 34px; list-style: none; }
+    .nl a { font-size: 0.78rem; font-weight: 500; letter-spacing: 0.02em; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    .nl a:hover { color: var(--text); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 10px 22px; border-radius: 7px; font-size: 0.8rem; font-weight: 500;
+      font-family: 'Inter', sans-serif; letter-spacing: 0.01em; text-decoration: none;
+      border: none; cursor: pointer; white-space: nowrap;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.15s, border-color 0.2s, color 0.2s;
+    }
+    .bf { background: var(--acc); color: #fff; }
+    .bf:hover { background: #5349E5; box-shadow: 0 4px 30px var(--acc-g); transform: translateY(-1px); }
+    .bf:active { transform: none; }
+    .bg { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .bg:hover { color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+    #ham { display: none; background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 8px; cursor: pointer; color: var(--text); }
+    #mob { display: none; position: fixed; top: 66px; left: 0; right: 0; background: rgba(6,6,11,0.98); border-bottom: 1px solid var(--border); padding: 24px; flex-direction: column; gap: 18px; z-index: 399; }
+    #mob a { font-size: 0.9rem; color: var(--muted); text-decoration: none; font-weight: 500; }
+
+    /* ---- FIELD ---- */
+    .field {
+      background: rgba(255,255,255,0.038); border: 1px solid var(--border);
+      color: var(--text); border-radius: 7px; font-family: 'Inter', sans-serif;
+      font-size: 0.875rem; padding: 12px 16px; outline: none; width: 100%;
       transition: border-color 0.2s, box-shadow 0.2s;
-      width: 100%;
     }
-    .input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-dim);
-    }
-    .input::placeholder { color: var(--muted); }
+    .field:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(99,91,255,0.11); }
+    .field::placeholder { color: var(--muted); }
 
-    /* ---- Cards ---- */
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
+    /* ---- HERO ---- */
+    #hero { min-height: 100svh; display: flex; align-items: center; padding: 110px 0 80px; }
 
-    /* ---- Icon box ---- */
-    .icon-box {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      background: var(--accent-dim);
-      border: 1px solid rgba(79,127,255,0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+    .h-title {
+      line-height: 1.0; margin-bottom: 0; letter-spacing: -0.01em;
     }
+    .h-line { overflow: hidden; display: block; }
+    .h-li { display: block; transform: translateY(110%); animation: rise 1s cubic-bezier(0.16,1,0.3,1) forwards; }
+    .h-line:nth-child(1) .h-li { animation-delay: 0.15s; }
+    .h-line:nth-child(2) .h-li { animation-delay: 0.30s; }
 
-    /* ---- Step watermark ---- */
-    .step-num {
-      position: absolute;
-      top: -6px;
-      right: 18px;
+    .hs {
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-variation-settings: 'opsz' 72;
+      font-size: clamp(2.8rem, 5.5vw, 4.8rem);
+      letter-spacing: -0.02em;
+      color: rgba(240,237,228,0.68);
+      display: inline;
+    }
+    .hb {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 5.5rem;
       font-weight: 700;
-      color: rgba(79,127,255,0.045);
-      line-height: 1;
-      user-select: none;
-      pointer-events: none;
+      font-size: clamp(4rem, 9.2vw, 8.2rem);
+      letter-spacing: -0.055em;
+      color: #fff;
+      display: inline;
     }
 
-    /* ---- Scroll reveal ---- */
-    .reveal {
-      opacity: 0;
-      transform: translateY(26px);
-      transition: opacity 0.65s ease, transform 0.65s ease;
-    }
-    .reveal.in { opacity: 1; transform: translateY(0); }
-    .d1 { transition-delay: 0.10s; }
-    .d2 { transition-delay: 0.20s; }
-    .d3 { transition-delay: 0.30s; }
-    .d4 { transition-delay: 0.40s; }
-    .d5 { transition-delay: 0.50s; }
-
-    /* ---- Gradient divider ---- */
-    .divider {
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(79,127,255,0.22) 50%, transparent);
-      max-width: 1152px;
-      margin: 0 auto;
+    .h-rule {
+      height: 1px; margin: 52px 0;
+      background: linear-gradient(90deg, var(--acc) 0%, rgba(99,91,255,0.06) 60%, transparent 100%);
+      transform-origin: left; transform: scaleX(0);
+      animation: rulein 0.9s cubic-bezier(0.16,1,0.3,1) 0.65s forwards;
     }
 
-    /* ---- Badge ---- */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 5px 13px;
-      border-radius: 100px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      border: 1px solid rgba(79,127,255,0.25);
-      background: rgba(79,127,255,0.07);
-      color: #86a8ff;
+    .h-bot {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start;
+      opacity: 0; animation: fadein 0.7s 0.8s ease forwards;
     }
-    .badge-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: blink 2.2s ease-in-out infinite;
+    .h-sub { font-size: clamp(0.9rem, 1.6vw, 1.05rem); color: var(--muted); line-height: 1.85; max-width: 400px; }
+    .h-fr { display: flex; flex-direction: column; gap: 10px; }
+    .h-fr-r { display: flex; gap: 8px; }
+    .h-note { font-size: 0.73rem; color: var(--muted); opacity: 0.65; }
+
+    /* ---- DIVIDER ---- */
+    .dv { height: 1px; background: linear-gradient(90deg, transparent, rgba(99,91,255,0.18) 50%, transparent); max-width: var(--r); margin: 0 auto; }
+
+    /* ---- SHARED SECTION LABELS ---- */
+    .sl { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--acc); margin-bottom: 12px; }
+    .st {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+      font-size: clamp(1.9rem, 3.8vw, 2.8rem); letter-spacing: -0.028em; line-height: 1.08; color: var(--text);
     }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.35; }
+    .st .si { font-family: 'Fraunces', serif; font-style: italic; font-weight: 400; font-variation-settings: 'opsz' 48; color: rgba(240,237,228,0.65); }
+
+    /* ---- VESTING TYPES (HORIZONTAL SCROLL) ---- */
+    #vest-out {
+      /* JS sets height dynamically */
+      position: relative;
+    }
+    #vest-sticky {
+      position: sticky; top: 0; height: 100svh; overflow: hidden;
+      display: flex; flex-direction: column;
+    }
+    #vest-bar {
+      height: 72px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 48px; border-bottom: 1px solid var(--border);
+    }
+    #vest-dots { display: flex; gap: 8px; align-items: center; }
+    .vd {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted); transition: background 0.3s, transform 0.3s;
+      cursor: default;
+    }
+    .vd.on { background: var(--acc); transform: scale(1.35); }
+
+    #vest-track {
+      flex: 1; display: flex; align-items: stretch;
+      will-change: transform; transition: transform 0.05s linear;
     }
 
-    /* ---- Hero orbs ---- */
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(70px);
-      pointer-events: none;
+    .vc {
+      min-width: 100vw; width: 100vw; flex-shrink: 0;
+      display: flex; align-items: center;
+      padding: 40px 48px; gap: 80px; position: relative; overflow: hidden;
     }
-    #orb1 {
-      width: 680px;
-      height: 680px;
-      background: radial-gradient(circle, rgba(79,127,255,0.09) 0%, transparent 65%);
-      top: -220px;
-      left: 50%;
-      transform: translateX(-50%);
-      will-change: transform;
+
+    .vc-num {
+      position: absolute; bottom: 24px; right: 48px;
+      font-family: 'Syne', 'Space Grotesk', sans-serif; font-weight: 800;
+      font-size: 20vw; color: rgba(255,255,255,0.025);
+      line-height: 1; user-select: none; pointer-events: none;
     }
-    #orb2 {
-      width: 380px;
-      height: 380px;
-      background: radial-gradient(circle, rgba(110, 60, 230, 0.07) 0%, transparent 70%);
-      top: 40px;
-      right: -60px;
+
+    .vc-left { flex: 0 0 480px; max-width: 480px; }
+    .vc-right { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; }
+
+    .vc-tag {
+      display: inline-block; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--acc); margin-bottom: 20px;
+      padding: 4px 10px; border: 1px solid rgba(99,91,255,0.28); border-radius: 4px;
+      background: rgba(99,91,255,0.07);
     }
+
+    .vc-name {
+      line-height: 1.05; margin-bottom: 24px;
+    }
+    .vc-name .vns { font-family: 'Fraunces', serif; font-style: italic; font-weight: 400; font-variation-settings: 'opsz' 60; font-size: clamp(2.8rem, 5vw, 4.5rem); color: rgba(240,237,228,0.7); display: block; letter-spacing: -0.02em; }
+    .vc-name .vnb { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(2.8rem, 5vw, 4.5rem); color: #fff; display: block; letter-spacing: -0.04em; }
+
+    .vc-desc { font-size: 0.9rem; color: var(--muted); line-height: 1.9; }
+
+    /* SVG chart */
+    .vc-chart { width: 100%; max-width: 460px; }
+
+    .chart-path {
+      stroke: var(--acc); stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round;
+      stroke-dasharray: 600; stroke-dashoffset: 600;
+      transition: stroke-dashoffset 1.4s cubic-bezier(0.16,1,0.3,1);
+    }
+    .chart-fill {
+      fill: rgba(99,91,255,0.06); opacity: 0;
+      transition: opacity 0.8s ease 0.3s;
+    }
+    .chart-axis { stroke: rgba(255,255,255,0.08); stroke-width: 1; }
+    .chart-label { fill: var(--muted); font-family: 'Inter', sans-serif; font-size: 11px; }
+    .chart-tick { stroke: rgba(255,255,255,0.06); stroke-width: 1; stroke-dasharray: 3 4; }
+
+    .vc.drawn .chart-path { stroke-dashoffset: 0; }
+    .vc.drawn .chart-fill { opacity: 1; }
+
+    /* ---- HOW IT WORKS ---- */
+    #how { padding: 130px 0; }
+    .how-hd { margin-bottom: 72px; }
+
+    .how-step {
+      display: grid; grid-template-columns: 72px 1fr; gap: 28px;
+      padding: 40px 0; border-top: 1px solid var(--border); position: relative; cursor: default;
+    }
+    .how-step:last-child { border-bottom: 1px solid var(--border); }
+    .how-step::before {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(99,91,255,0.025); opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    }
+    .how-step:hover::before { opacity: 1; }
+    .hw-n { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 3rem; color: rgba(255,255,255,0.04); line-height: 1; padding-top: 4px; user-select: none; }
+    .hw-in { display: grid; grid-template-columns: 240px 1fr; gap: 52px; align-items: start; }
+    .hw-t { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 1.1rem; letter-spacing: -0.015em; color: var(--text); line-height: 1.3; }
+    .hw-b { font-size: 0.875rem; color: var(--muted); line-height: 1.9; }
+
+    /* ---- FEATURES BENTO ---- */
+    #features { padding: 130px 0; }
+    .feat-hd { margin-bottom: 52px; }
+
+    .bento { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+
+    .bc {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+      padding: 30px; position: relative; overflow: hidden;
+      transition: border-color 0.3s, background 0.3s; cursor: default;
+    }
+    .bc:hover { border-color: rgba(99,91,255,0.28); background: rgba(99,91,255,0.035); }
+    .bc::before {
+      content: ''; position: absolute; width: 220px; height: 220px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,91,255,0.09) 0%, transparent 70%);
+      pointer-events: none; opacity: 0; transition: opacity 0.3s;
+      left: var(--bx, 50%); top: var(--by, 50%); transform: translate(-50%,-50%);
+    }
+    .bc:hover::before { opacity: 1; }
+
+    .bc.w2 { grid-column: span 2; }
+    .bc-ic { width: 32px; height: 32px; color: var(--acc); margin-bottom: 16px; }
+    .bc-t { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 0.92rem; letter-spacing: -0.01em; color: var(--text); margin-bottom: 8px; }
+    .bc-b { font-size: 0.835rem; color: var(--muted); line-height: 1.85; }
 
     /* ---- FAQ ---- */
-    .faq-item {
-      border-bottom: 1px solid var(--border);
-      cursor: pointer;
-    }
-    .faq-item:last-child { border-bottom: none; }
-    .faq-answer {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.36s ease;
-    }
-    .faq-answer.open { max-height: 280px; }
-    .faq-chevron { transition: transform 0.3s ease; color: var(--muted); flex-shrink: 0; }
-    .faq-item.faq-active .faq-chevron { transform: rotate(180deg); }
+    #faq { padding: 130px 0; }
+    .faq-g { display: grid; grid-template-columns: 240px 1fr; gap: 96px; align-items: start; }
+    .faq-s { position: sticky; top: 96px; }
+    .faq-sd { font-size: 0.84rem; color: var(--muted); line-height: 1.8; margin-top: 14px; }
+    .fq-list { display: flex; flex-direction: column; }
+    .fq { border-top: 1px solid var(--border); cursor: pointer; }
+    .fq:last-child { border-bottom: 1px solid var(--border); }
+    .fq-h { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 22px 0; }
+    .fq-q { font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 0.9rem; color: var(--text); line-height: 1.4; }
+    .fq-i { flex-shrink: 0; width: 18px; height: 18px; position: relative; }
+    .fq-i::before, .fq-i::after { content: ''; position: absolute; background: var(--muted); border-radius: 1px; transition: transform 0.3s, opacity 0.3s; }
+    .fq-i::before { width: 10px; height: 1.4px; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+    .fq-i::after  { width: 1.4px; height: 10px; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+    .fq.on .fq-i::after { opacity: 0; transform: translate(-50%,-50%) rotate(90deg); }
+    .fq-a { max-height: 0; overflow: hidden; transition: max-height 0.38s ease; }
+    .fq-a.on { max-height: 280px; }
+    .fq-ai { padding-bottom: 22px; font-size: 0.855rem; color: var(--muted); line-height: 1.9; }
 
-    /* ---- Footer link ---- */
-    .footer-link {
-      font-size: 0.8rem;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.2s;
+    /* ---- CTA ---- */
+    #cta { padding: 130px 0 96px; }
+    .cta-box {
+      border: 1px solid var(--border); border-radius: 18px; padding: 96px 64px;
+      background: rgba(99,91,255,0.03); position: relative; overflow: hidden; text-align: center;
     }
-    .footer-link:hover { color: var(--text); }
+    .cta-box::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 480px; height: 1px; background: linear-gradient(90deg, transparent, var(--acc), transparent);
+    }
+    .cta-box::after {
+      content: ''; position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
+      width: 500px; height: 500px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,91,255,0.06) 0%, transparent 65%);
+      filter: blur(50px); pointer-events: none;
+    }
+    .cta-in { position: relative; z-index: 2; max-width: 520px; margin: 0 auto; }
+    .cta-t {
+      font-family: 'Fraunces', serif; font-style: italic; font-weight: 400;
+      font-variation-settings: 'opsz' 60;
+      font-size: clamp(2rem, 5vw, 3.6rem); letter-spacing: -0.025em; line-height: 1.1; color: var(--text); margin-bottom: 14px;
+    }
+    .cta-s { font-size: 0.95rem; color: var(--muted); line-height: 1.8; margin-bottom: 40px; }
+    .cta-r { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .cta-r .field { max-width: 268px; }
 
-    /* ---- Reduced motion ---- */
+    /* ---- FOOTER ---- */
+    #foot { border-top: 1px solid var(--border); padding: 36px 0; }
+    .foot-in { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .foot-note { font-size: 0.74rem; color: var(--muted); }
+    .foot-ls { display: flex; gap: 24px; }
+    .foot-ls a { font-size: 0.74rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    .foot-ls a:hover { color: var(--text); }
+
+    /* ---- SCROLL REVEAL ---- */
+    .r { opacity: 0; transform: translateY(22px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .r.in { opacity: 1; transform: none; }
+    .d1 { transition-delay: 0.10s; } .d2 { transition-delay: 0.20s; }
+    .d3 { transition-delay: 0.30s; } .d4 { transition-delay: 0.40s; } .d5 { transition-delay: 0.50s; }
+
+    /* ---- KEYFRAMES ---- */
+    @keyframes rise   { to { transform: translateY(0); } }
+    @keyframes fadein { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+    @keyframes rulein { to { transform: scaleX(1); } }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 940px) {
+      .bento { grid-template-columns: repeat(2,1fr); }
+      .bc.w2 { grid-column: span 2; }
+    }
+    @media (max-width: 760px) {
+      .w { padding: 0 20px; }
+      .h-bot { grid-template-columns: 1fr; gap: 32px; }
+      .h-sub { max-width: none; }
+      .h-fr-r { flex-wrap: wrap; }
+      .hw-in { grid-template-columns: 1fr; gap: 8px; }
+      .how-step { grid-template-columns: 44px 1fr; }
+      .hw-n { font-size: 2.2rem; }
+      .faq-g { grid-template-columns: 1fr; gap: 40px; }
+      .faq-s { position: static; }
+      .cta-box { padding: 52px 24px; }
+      #vest-bar { padding: 0 20px; }
+      .vc { padding: 30px 20px; flex-direction: column; gap: 40px; }
+      .vc-left { flex: none; max-width: none; }
+    }
+    @media (max-width: 600px) {
+      .bento { grid-template-columns: 1fr; }
+      .bc.w2 { grid-column: span 1; }
+    }
+    @media (max-width: 740px) {
+      .nl { display: none !important; }
+      #ham { display: flex; }
+    }
     @media (prefers-reduced-motion: reduce) {
-      .reveal { opacity: 1; transform: none; transition: none; }
-      .btn-primary:hover { transform: none; }
-      #orb1 { transition: none !important; }
-      * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+      .h-li, .h-rule, .h-bot { animation: none !important; transform: none !important; opacity: 1 !important; }
+      .r { opacity: 1; transform: none; transition: none; }
+      .bf:hover { transform: none; }
+      .chart-path { transition: none; stroke-dashoffset: 0; }
     }
-
-    /* ---- Mobile ---- */
-    #mobile-menu { display: none; }
   </style>
 </head>
 
 <body>
 
-  <!-- ============================================================
-       NAVBAR
-  ============================================================ -->
-  <nav id="navbar" aria-label="Main navigation">
-    <div style="max-width:1152px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;">
+  <!-- progress -->
+  <div id="prog"></div>
+  <!-- canvas -->
+  <canvas id="cvs" aria-hidden="true"></canvas>
 
-      <!-- Logo -->
-      <a href="#" style="display:flex;align-items:center;gap:10px;text-decoration:none;" aria-label="Themis home">
-        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-          <circle cx="13" cy="3.5" r="1.8" fill="#4f7fff"/>
-          <line x1="13" y1="5.3" x2="13" y2="21" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-          <line x1="3.5" y1="9" x2="22.5" y2="9" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-          <path d="M1 9 Q4 15.5 7 9" fill="none" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-          <path d="M19 9 Q22 15.5 25 9" fill="none" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-          <line x1="8" y1="21" x2="18" y2="21" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-        </svg>
-        <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:17px;color:var(--text);letter-spacing:-0.02em;">Themis</span>
-      </a>
 
-      <!-- Desktop nav -->
-      <div style="display:flex;align-items:center;gap:32px;" class="hidden md:flex">
-        <a href="#how-it-works" class="nav-link">How it works</a>
-        <a href="#features"     class="nav-link">Features</a>
-        <a href="#faq"          class="nav-link">FAQ</a>
-      </div>
-
-      <!-- CTA + mobile toggle -->
-      <div style="display:flex;align-items:center;gap:10px;">
-        <a href="#waitlist" class="btn-primary" style="padding:9px 20px;font-size:0.875rem;">
-          Join the waitlist
-        </a>
-        <button
-          id="menu-toggle"
-          class="md:hidden btn-outline"
-          style="padding:8px;border-radius:8px;"
-          aria-label="Toggle menu"
-          aria-expanded="false"
-        >
-          <svg id="icon-open"  width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
-            <line x1="3" y1="6"  x2="17" y2="6" />
-            <line x1="3" y1="10" x2="17" y2="10"/>
-            <line x1="3" y1="14" x2="17" y2="14"/>
+  <!-- ===== NAV ===== -->
+  <nav id="nav">
+    <div class="w">
+      <a href="#" class="logo">Themis</a>
+      <ul class="nl" id="nul">
+        <li><a href="#vest-sec">Vesting</a></li>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <a href="#cta" class="btn bf">Join the waitlist</a>
+        <button id="ham" aria-label="Menu" aria-expanded="false">
+          <svg id="icH" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+            <line x1="2" y1="5" x2="16" y2="5"/><line x1="2" y1="9" x2="16" y2="9"/><line x1="2" y1="13" x2="16" y2="13"/>
           </svg>
-          <svg id="icon-close" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="display:none;">
-            <line x1="5" y1="5"  x2="15" y2="15"/>
-            <line x1="15" y1="5" x2="5"  y2="15"/>
+          <svg id="icX" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true" style="display:none;">
+            <line x1="4" y1="4" x2="14" y2="14"/><line x1="14" y1="4" x2="4" y2="14"/>
           </svg>
         </button>
       </div>
-    </div>
-
-    <!-- Mobile menu -->
-    <div id="mobile-menu" style="background:rgba(6,9,16,0.97);border-top:1px solid var(--border);padding:20px 24px;flex-direction:column;gap:20px;">
-      <a href="#how-it-works" class="nav-link" onclick="closeMenu()">How it works</a>
-      <a href="#features"     class="nav-link" onclick="closeMenu()">Features</a>
-      <a href="#faq"          class="nav-link" onclick="closeMenu()">FAQ</a>
-      <a href="#waitlist" class="btn-primary" style="padding:11px 20px;font-size:0.875rem;text-align:center;" onclick="closeMenu()">
-        Join the waitlist
-      </a>
     </div>
   </nav>
+  <div id="mob">
+    <a href="#vest-sec" onclick="cm()">Vesting</a>
+    <a href="#how"      onclick="cm()">How it works</a>
+    <a href="#features" onclick="cm()">Features</a>
+    <a href="#faq"      onclick="cm()">FAQ</a>
+    <a href="#cta" class="btn bf" style="text-align:center;" onclick="cm()">Join the waitlist</a>
+  </div>
 
 
-  <!-- ============================================================
-       HERO
-  ============================================================ -->
-  <section id="hero" style="position:relative;overflow:hidden;padding:144px 24px 104px;">
-    <div class="orb" id="orb1"></div>
-    <div class="orb" id="orb2"></div>
+  <!-- ===== HERO ===== -->
+  <section id="hero">
+    <div class="w">
 
-    <div style="max-width:760px;margin:0 auto;text-align:center;position:relative;z-index:2;">
-
-      <div class="badge" style="margin-bottom:28px;">
-        <span class="badge-dot"></span>
-        Built on Solana
-      </div>
-
-      <h1 style="font-size:clamp(2.8rem,7.5vw,5.2rem);font-weight:700;line-height:1.04;letter-spacing:-0.038em;color:var(--text);margin-bottom:22px;">
-        Token distribution,<br/>done right.
+      <h1 class="h-title">
+        <span class="h-line">
+          <span class="h-li"><span class="hs">Token distribution,</span></span>
+        </span>
+        <span class="h-line">
+          <span class="h-li"><span class="hb">done right.</span></span>
+        </span>
       </h1>
 
-      <p style="font-size:clamp(1rem,2.5vw,1.2rem);color:var(--muted);line-height:1.78;max-width:500px;margin:0 auto 44px;font-weight:400;">
-        Themis lets teams schedule automatic token payments to contributors.
-        Set the rules once and the protocol enforces them on-chain.
-      </p>
+      <div class="h-rule"></div>
 
-      <!-- Waitlist form -->
-      <form
-        id="hero-form"
-        style="display:flex;gap:8px;max-width:440px;margin:0 auto 18px;flex-wrap:wrap;"
-        onsubmit="handleForm(event,'hero-form','hero-success')"
-      >
-        <input
-          type="email"
-          placeholder="Work email address"
-          required
-          class="input"
-          style="padding:13px 16px;flex:1;min-width:200px;"
-          aria-label="Email address for waitlist"
-        />
-        <button type="submit" class="btn-primary" style="padding:13px 22px;font-size:0.9rem;" id="hero-btn">
-          Join the waitlist
-        </button>
-      </form>
-      <p id="hero-success" style="display:none;color:#86a8ff;font-size:0.875rem;margin-bottom:18px;">
-        You are on the list. We will be in touch soon.
-      </p>
-
-      <p style="font-size:0.8rem;color:var(--muted);">
-        <span style="color:var(--text);font-weight:500;">140+ teams</span> already on the waitlist
-      </p>
-    </div>
-  </section>
-
-
-  <div class="divider"></div>
-
-
-  <!-- ============================================================
-       HOW IT WORKS
-  ============================================================ -->
-  <section id="how-it-works" style="padding:96px 24px;">
-    <div style="max-width:1152px;margin:0 auto;">
-
-      <div style="text-align:center;margin-bottom:64px;" class="reveal">
-        <p style="font-size:0.72rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">How it works</p>
-        <h2 style="font-size:clamp(1.9rem,4.5vw,2.8rem);font-weight:700;letter-spacing:-0.028em;color:var(--text);line-height:1.08;">
-          From setup to payout in three steps
-        </h2>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;">
-
-        <div class="card reveal d1" style="border-radius:16px;padding:36px 32px;position:relative;overflow:hidden;">
-          <span class="step-num">1</span>
-          <div class="icon-box" style="margin-bottom:24px;">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="10" cy="10" r="8"/>
-              <line x1="10" y1="6"  x2="10" y2="14"/>
-              <line x1="6"  y1="10" x2="14" y2="10"/>
-            </svg>
-          </div>
-          <h3 style="font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:10px;letter-spacing:-0.01em;">Create a stream</h3>
-          <p style="font-size:0.875rem;color:var(--muted);line-height:1.78;">
-            Enter a recipient wallet, a token amount, and the vesting period.
-            No technical knowledge required on your end.
-          </p>
-        </div>
-
-        <div class="card reveal d2" style="border-radius:16px;padding:36px 32px;position:relative;overflow:hidden;">
-          <span class="step-num">2</span>
-          <div class="icon-box" style="margin-bottom:24px;">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="10" cy="10" r="8"/>
-              <polyline points="10 6 10 10 13 12.5"/>
-            </svg>
-          </div>
-          <h3 style="font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:10px;letter-spacing:-0.01em;">Tokens vest on schedule</h3>
-          <p style="font-size:0.875rem;color:var(--muted);line-height:1.78;">
-            Smart contracts release tokens over time according to the schedule you defined.
-            Fully automatic, no manual transfers needed.
-          </p>
-        </div>
-
-        <div class="card reveal d3" style="border-radius:16px;padding:36px 32px;position:relative;overflow:hidden;">
-          <span class="step-num">3</span>
-          <div class="icon-box" style="margin-bottom:24px;">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="4" y1="10" x2="16" y2="10"/>
-              <polyline points="11 5 16 10 11 15"/>
-            </svg>
-          </div>
-          <h3 style="font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:10px;letter-spacing:-0.01em;">Recipients claim anytime</h3>
-          <p style="font-size:0.875rem;color:var(--muted);line-height:1.78;">
-            Contributors connect their wallet and withdraw whatever has vested at any time,
-            without waiting for your approval.
-          </p>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-
-  <div class="divider"></div>
-
-
-  <!-- ============================================================
-       FEATURES
-  ============================================================ -->
-  <section id="features" style="padding:96px 24px;">
-    <div style="max-width:1152px;margin:0 auto;">
-
-      <div style="text-align:center;margin-bottom:64px;" class="reveal">
-        <p style="font-size:0.72rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Features</p>
-        <h2 style="font-size:clamp(1.9rem,4.5vw,2.8rem);font-weight:700;letter-spacing:-0.028em;color:var(--text);line-height:1.08;">
-          Built for teams that need control
-        </h2>
-        <p style="font-size:1rem;color:var(--muted);max-width:460px;margin:16px auto 0;line-height:1.75;">
-          Everything required to distribute tokens fairly, without the operational overhead.
+      <div class="h-bot">
+        <p class="h-sub">
+          Themis lets teams schedule automatic token payments to contributors.
+          Set the rules once and the protocol enforces them on-chain.
         </p>
+        <div class="h-fr">
+          <form class="h-fr-r" id="hf" onsubmit="sub(event,'hf','ho')">
+            <input type="email" class="field" placeholder="Work email" required aria-label="Email for waitlist" style="flex:1;min-width:180px;" />
+            <button type="submit" class="btn bf" id="hb">Join the waitlist</button>
+          </form>
+          <p id="ho" style="display:none;font-size:0.8rem;color:#8B85FF;">You are on the list. We will be in touch.</p>
+          <p class="h-note">No spam. Early access only.</p>
+        </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+    </div>
+  </section>
 
-        <div class="card reveal" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
-          <div class="icon-box">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="3" width="14" height="14" rx="2"/>
-              <line x1="3" y1="9" x2="17" y2="9"/>
-              <line x1="9" y1="9" x2="9" y2="17"/>
-            </svg>
-          </div>
+
+  <div class="dv"></div>
+
+
+  <!-- ===== VESTING TYPES (HORIZONTAL SCROLL) ===== -->
+  <section id="vest-sec">
+    <div id="vest-out">
+      <div id="vest-sticky">
+
+        <div id="vest-bar">
           <div>
-            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Cliff and linear vesting</h3>
-            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
-              Set a waiting period before vesting begins, then release tokens gradually over the remaining schedule.
-            </p>
+            <span class="sl" style="margin-bottom:0;">Vesting types</span>
+          </div>
+          <div id="vest-dots">
+            <span class="vd on"></span>
+            <span class="vd"></span>
+            <span class="vd"></span>
           </div>
         </div>
 
-        <div class="card reveal d1" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
-          <div class="icon-box">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <line x1="4"  y1="4"  x2="16" y2="16"/>
-              <line x1="16" y1="4"  x2="4"  y2="16"/>
-              <circle cx="10" cy="10" r="8"/>
-            </svg>
+        <div id="vest-track">
+
+          <!-- CARD 1: CLIFF -->
+          <div class="vc" id="vc1">
+            <span class="vc-num">01</span>
+            <div class="vc-left">
+              <span class="vc-tag">Standard</span>
+              <div class="vc-name">
+                <span class="vns">Cliff</span>
+                <span class="vnb">Vesting</span>
+              </div>
+              <p class="vc-desc">
+                Recipients receive nothing during the cliff period. Once the cliff passes,
+                tokens vest linearly for the remainder of the schedule. The standard model
+                for team and contributor agreements.
+              </p>
+            </div>
+            <div class="vc-right">
+              <svg class="vc-chart" viewBox="0 0 460 200" fill="none" aria-label="Cliff vesting chart">
+                <!-- grid -->
+                <line class="chart-axis" x1="40" y1="170" x2="440" y2="170"/>
+                <line class="chart-axis" x1="40" y1="20"  x2="40"  y2="170"/>
+                <line class="chart-tick" x1="150" y1="20" x2="150" y2="170"/>
+                <line class="chart-tick" x1="260" y1="20" x2="260" y2="170"/>
+                <line class="chart-tick" x1="370" y1="20" x2="370" y2="170"/>
+                <!-- labels -->
+                <text class="chart-label" x="32"  y="175" text-anchor="middle">0</text>
+                <text class="chart-label" x="150" y="186" text-anchor="middle">Cliff</text>
+                <text class="chart-label" x="440" y="186" text-anchor="end">Time</text>
+                <text class="chart-label" x="36"  y="24"  text-anchor="end">100%</text>
+                <!-- fill area -->
+                <path class="chart-fill" d="M40,170 L150,170 L440,24 L440,170 Z"/>
+                <!-- line -->
+                <path class="chart-path" d="M40,170 L150,170 L440,24"/>
+                <!-- cliff marker -->
+                <circle cx="150" cy="170" r="4" fill="var(--acc)" opacity="0.8"/>
+              </svg>
+            </div>
           </div>
-          <div>
-            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Instant cancellation</h3>
-            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
-              Cancel any stream at any time. Tokens that have already vested stay with the recipient.
-              The rest return to you immediately.
-            </p>
+
+          <!-- CARD 2: LINEAR -->
+          <div class="vc" id="vc2">
+            <span class="vc-num">02</span>
+            <div class="vc-left">
+              <span class="vc-tag">Continuous</span>
+              <div class="vc-name">
+                <span class="vns">Linear</span>
+                <span class="vnb">Vesting</span>
+              </div>
+              <p class="vc-desc">
+                Tokens vest at a constant rate from day one through to the end of the schedule.
+                No waiting period. Every day counts from the moment the stream is created.
+                Simple and predictable for both sides.
+              </p>
+            </div>
+            <div class="vc-right">
+              <svg class="vc-chart" viewBox="0 0 460 200" fill="none" aria-label="Linear vesting chart">
+                <line class="chart-axis" x1="40" y1="170" x2="440" y2="170"/>
+                <line class="chart-axis" x1="40" y1="20"  x2="40"  y2="170"/>
+                <line class="chart-tick" x1="150" y1="20" x2="150" y2="170"/>
+                <line class="chart-tick" x1="260" y1="20" x2="260" y2="170"/>
+                <line class="chart-tick" x1="370" y1="20" x2="370" y2="170"/>
+                <text class="chart-label" x="32"  y="175" text-anchor="middle">0</text>
+                <text class="chart-label" x="440" y="186" text-anchor="end">Time</text>
+                <text class="chart-label" x="36"  y="24"  text-anchor="end">100%</text>
+                <path class="chart-fill" d="M40,170 L440,24 L440,170 Z"/>
+                <path class="chart-path" d="M40,170 L440,24"/>
+                <circle cx="40"  cy="170" r="4" fill="var(--acc)" opacity="0.8"/>
+                <circle cx="440" cy="24"  r="4" fill="var(--acc)" opacity="0.8"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- CARD 3: MILESTONE -->
+          <div class="vc" id="vc3">
+            <span class="vc-num">03</span>
+            <div class="vc-left">
+              <span class="vc-tag">Conditional</span>
+              <div class="vc-name">
+                <span class="vns">Milestone</span>
+                <span class="vnb">Vesting</span>
+              </div>
+              <p class="vc-desc">
+                Tokens unlock in tranches when predefined conditions are met. Each milestone
+                triggers a release. Ideal for project-based contributors where delivery
+                matters more than time spent.
+              </p>
+            </div>
+            <div class="vc-right">
+              <svg class="vc-chart" viewBox="0 0 460 200" fill="none" aria-label="Milestone vesting chart">
+                <line class="chart-axis" x1="40" y1="170" x2="440" y2="170"/>
+                <line class="chart-axis" x1="40" y1="20"  x2="40"  y2="170"/>
+                <line class="chart-tick" x1="155" y1="20" x2="155" y2="170"/>
+                <line class="chart-tick" x1="270" y1="20" x2="270" y2="170"/>
+                <line class="chart-tick" x1="385" y1="20" x2="385" y2="170"/>
+                <text class="chart-label" x="32"  y="175" text-anchor="middle">0</text>
+                <text class="chart-label" x="155" y="186" text-anchor="middle">M1</text>
+                <text class="chart-label" x="270" y="186" text-anchor="middle">M2</text>
+                <text class="chart-label" x="385" y="186" text-anchor="middle">M3</text>
+                <text class="chart-label" x="440" y="186" text-anchor="end">Time</text>
+                <text class="chart-label" x="36"  y="24"  text-anchor="end">100%</text>
+                <path class="chart-fill" d="M40,170 L155,170 L155,116 L270,116 L270,63 L385,63 L385,24 L440,24 L440,170 Z"/>
+                <path class="chart-path" d="M40,170 L155,170 L155,116 L270,116 L270,63 L385,63 L385,24 L440,24"/>
+                <circle cx="155" cy="116" r="4" fill="var(--acc)" opacity="0.8"/>
+                <circle cx="270" cy="63"  r="4" fill="var(--acc)" opacity="0.8"/>
+                <circle cx="385" cy="24"  r="4" fill="var(--acc)" opacity="0.8"/>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <div class="dv"></div>
+
+
+  <!-- ===== HOW IT WORKS ===== -->
+  <section id="how">
+    <div class="w">
+      <div class="how-hd r">
+        <p class="sl">How it works</p>
+        <h2 class="st">Three steps from <span class="si">setup to payout</span></h2>
+      </div>
+      <div>
+        <div class="how-step r d1">
+          <div class="hw-n">01</div>
+          <div class="hw-in">
+            <h3 class="hw-t">Create a stream</h3>
+            <p class="hw-b">Enter a recipient wallet, a token amount, and the vesting period. No technical knowledge required. The interface is as simple as filling out a form.</p>
           </div>
         </div>
-
-        <div class="card reveal d2" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
-          <div class="icon-box">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M10 2 L3 6 V10 C3 14.4 6.2 17.8 10 18.5 C13.8 17.8 17 14.4 17 10 V6 Z"/>
-            </svg>
-          </div>
-          <div>
-            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Non-custodial</h3>
-            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
-              Themis never holds your tokens. Everything is locked in a smart contract
-              that only the defined rules can unlock.
-            </p>
+        <div class="how-step r d2">
+          <div class="hw-n">02</div>
+          <div class="hw-in">
+            <h3 class="hw-t">Tokens vest on schedule</h3>
+            <p class="hw-b">Smart contracts release tokens over time according to the schedule you defined. Fully automatic. No manual transfers, no reminders, no spreadsheets.</p>
           </div>
         </div>
-
-        <div class="card reveal d3" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
-          <div class="icon-box">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polygon points="10 2 4 14 10 12 16 14"/>
-            </svg>
-          </div>
-          <div>
-            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Built on Solana</h3>
-            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
-              Transactions settle in under a second for a fraction of a cent.
-              No expensive gas fees or long confirmation times.
-            </p>
+        <div class="how-step r d3">
+          <div class="hw-n">03</div>
+          <div class="hw-in">
+            <h3 class="hw-t">Recipients claim anytime</h3>
+            <p class="hw-b">Contributors connect a wallet and withdraw whatever has vested at any time, without waiting for your approval. Entirely self-service on their end.</p>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div class="card reveal d4" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
-          <div class="icon-box">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="10" cy="10" r="8"/>
-              <line x1="10" y1="6.5" x2="10" y2="10.5"/>
-              <circle cx="10" cy="13.5" r="0.6" fill="#4f7fff" stroke="none"/>
-            </svg>
-          </div>
-          <div>
-            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Fully transparent</h3>
-            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
-              Every stream is recorded on-chain. Any party can verify the schedule,
-              the balance, and the full history at any time.
-            </p>
-          </div>
+
+  <div class="dv"></div>
+
+
+  <!-- ===== FEATURES ===== -->
+  <section id="features">
+    <div class="w">
+      <div class="feat-hd r">
+        <p class="sl">Features</p>
+        <h2 class="st">Built for teams that <span class="si">need control</span></h2>
+      </div>
+      <div class="bento">
+
+        <div class="bc w2 r">
+          <svg class="bc-ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="28" height="28" rx="4"/><line x1="2" y1="14" x2="30" y2="14"/><line x1="14" y1="14" x2="14" y2="30"/>
+          </svg>
+          <div class="bc-t">Cliff, linear, and milestone vesting</div>
+          <p class="bc-b">Choose the model that fits your contributor agreements. A waiting period before linear release, continuous drip from day one, or tranches that unlock on delivery. All three are built in.</p>
         </div>
 
-        <div class="card reveal d5" style="border-radius:14px;padding:28px;display:flex;gap:18px;align-items:flex-start;">
-          <div class="icon-box">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#4f7fff" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="4 10 8 14 16 6"/>
-            </svg>
-          </div>
-          <div>
-            <h3 style="font-size:0.925rem;font-weight:600;color:var(--text);margin-bottom:8px;">Simple to set up</h3>
-            <p style="font-size:0.85rem;color:var(--muted);line-height:1.77;">
-              No command line, no configuration files. Connect a wallet, fill in the details,
-              and the stream is live in under a minute.
-            </p>
-          </div>
+        <div class="bc r d1">
+          <svg class="bc-ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 3 L4 9.5 V16 C4 22.5 9.2 28.2 16 29.5 C22.8 28.2 28 22.5 28 16 V9.5 Z"/>
+          </svg>
+          <div class="bc-t">Non-custodial</div>
+          <p class="bc-b">Themis never holds your tokens. Everything is locked in a smart contract that only the defined rules can unlock.</p>
+        </div>
+
+        <div class="bc r d2">
+          <svg class="bc-ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="16" cy="16" r="12"/><line x1="7" y1="7" x2="25" y2="25"/><line x1="25" y1="7" x2="7" y2="25"/>
+          </svg>
+          <div class="bc-t">Instant cancellation</div>
+          <p class="bc-b">Cancel any stream at any time. Vested tokens stay with the recipient. Unvested tokens return to you immediately.</p>
+        </div>
+
+        <div class="bc r d3">
+          <svg class="bc-ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="16 3 9 21 16 18 23 21"/>
+          </svg>
+          <div class="bc-t">Built on Solana</div>
+          <p class="bc-b">Transactions settle in under a second for a fraction of a cent. No gas surprises.</p>
+        </div>
+
+        <div class="bc r d1">
+          <svg class="bc-ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="16" cy="16" r="12"/><line x1="16" y1="10" x2="16" y2="16"/><circle cx="16" cy="21" r="1.2" fill="currentColor" stroke="none"/>
+          </svg>
+          <div class="bc-t">Fully transparent</div>
+          <p class="bc-b">Every stream is recorded on-chain. Any party can verify the schedule and balance at any time.</p>
+        </div>
+
+        <div class="bc r d2">
+          <svg class="bc-ic" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 16 13 23 26 9"/>
+          </svg>
+          <div class="bc-t">Simple to set up</div>
+          <p class="bc-b">No command line, no config files. Connect a wallet, fill in the details, and the stream is live in under a minute.</p>
         </div>
 
       </div>
@@ -595,276 +690,261 @@
   </section>
 
 
-  <div class="divider"></div>
+  <div class="dv"></div>
 
 
-  <!-- ============================================================
-       FAQ
-  ============================================================ -->
-  <section id="faq" style="padding:96px 24px;">
-    <div style="max-width:700px;margin:0 auto;">
-
-      <div style="text-align:center;margin-bottom:56px;" class="reveal">
-        <p style="font-size:0.72rem;font-weight:600;letter-spacing:0.13em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">FAQ</p>
-        <h2 style="font-size:clamp(1.9rem,4.5vw,2.8rem);font-weight:700;letter-spacing:-0.028em;color:var(--text);line-height:1.08;">
-          Common questions
-        </h2>
-      </div>
-
-      <div class="card reveal" style="border-radius:16px;overflow:hidden;">
-
-        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
-            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">What is token vesting?</span>
-            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
-              <polyline points="4 7 9 12 14 7"/>
-            </svg>
+  <!-- ===== FAQ ===== -->
+  <section id="faq">
+    <div class="w">
+      <div class="faq-g">
+        <div class="faq-s r">
+          <p class="sl">FAQ</p>
+          <h2 class="st">Common<br/><span class="si">questions</span></h2>
+          <p class="faq-sd">If something is not covered here, reach out directly.</p>
+        </div>
+        <div class="fq-list r d1">
+          <div class="fq" onclick="tfq(this)">
+            <div class="fq-h"><span class="fq-q">What is token vesting?</span><span class="fq-i" aria-hidden="true"></span></div>
+            <div class="fq-a"><p class="fq-ai">Vesting is a way to distribute tokens gradually over time rather than all at once. A contributor might be entitled to 10,000 tokens over two years, receiving a portion each month as they continue contributing. It is standard practice in both traditional equity compensation and token-based organizations.</p></div>
           </div>
-          <div class="faq-answer">
-            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
-              Vesting is a way to distribute tokens gradually over time rather than all at once.
-              A contributor might be entitled to 10,000 tokens over two years, receiving a portion
-              each month as they continue contributing. It is standard practice in both traditional
-              equity compensation and token-based organizations.
-            </p>
+          <div class="fq" onclick="tfq(this)">
+            <div class="fq-h"><span class="fq-q">Do I need to understand blockchain to use this?</span><span class="fq-i" aria-hidden="true"></span></div>
+            <div class="fq-a"><p class="fq-ai">No. Themis is designed to feel like a standard web application. You will need a Solana wallet to sign transactions, but the interface does not require any knowledge of how the underlying protocol works.</p></div>
+          </div>
+          <div class="fq" onclick="tfq(this)">
+            <div class="fq-h"><span class="fq-q">What happens when a stream is cancelled?</span><span class="fq-i" aria-hidden="true"></span></div>
+            <div class="fq-a"><p class="fq-ai">Tokens that have already vested remain with the recipient and can still be claimed. Any tokens that had not yet vested are returned to the wallet that created the stream. The cancellation is instant and settled on-chain.</p></div>
+          </div>
+          <div class="fq" onclick="tfq(this)">
+            <div class="fq-h"><span class="fq-q">What is a cliff period?</span><span class="fq-i" aria-hidden="true"></span></div>
+            <div class="fq-a"><p class="fq-ai">A cliff is a waiting period before any tokens begin vesting. A one-year cliff means the recipient receives nothing for the first year, then vesting starts. This is common in contributor agreements to ensure commitment before rewards are distributed.</p></div>
+          </div>
+          <div class="fq" onclick="tfq(this)">
+            <div class="fq-h"><span class="fq-q">What tokens does Themis support?</span><span class="fq-i" aria-hidden="true"></span></div>
+            <div class="fq-a"><p class="fq-ai">Themis supports any SPL token on Solana, including USDC, wrapped SOL, and any custom project token that follows the standard SPL token format.</p></div>
           </div>
         </div>
-
-        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
-            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">Do I need to understand blockchain to use this?</span>
-            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
-              <polyline points="4 7 9 12 14 7"/>
-            </svg>
-          </div>
-          <div class="faq-answer">
-            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
-              No. Themis is designed to feel like a standard web application. You will need a
-              Solana wallet to sign transactions, but the interface does not require you to
-              understand how the underlying protocol works.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
-            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">What happens when a stream is cancelled?</span>
-            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
-              <polyline points="4 7 9 12 14 7"/>
-            </svg>
-          </div>
-          <div class="faq-answer">
-            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
-              When you cancel a stream, tokens that have already vested remain with the recipient
-              and can still be claimed. Any tokens that had not yet vested are returned to the wallet
-              that created the stream. The cancellation is instant and settled on-chain.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
-            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">What is a cliff period?</span>
-            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
-              <polyline points="4 7 9 12 14 7"/>
-            </svg>
-          </div>
-          <div class="faq-answer">
-            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
-              A cliff is a mandatory waiting period before any tokens begin vesting.
-              For example, a one-year cliff means the recipient receives nothing for the first year,
-              then vesting starts. This is common in contributor agreements to ensure commitment
-              before rewards are distributed.
-            </p>
-          </div>
-        </div>
-
-        <div class="faq-item" style="padding:22px 26px;" onclick="toggleFaq(this)">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;">
-            <span style="font-weight:500;font-size:0.925rem;color:var(--text);">What tokens does Themis support?</span>
-            <svg class="faq-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
-              <polyline points="4 7 9 12 14 7"/>
-            </svg>
-          </div>
-          <div class="faq-answer">
-            <p style="padding-top:14px;font-size:0.85rem;color:var(--muted);line-height:1.8;">
-              Themis supports any SPL token on Solana. That includes USDC, wrapped SOL, and any
-              custom project token that follows the standard SPL token format.
-            </p>
-          </div>
-        </div>
-
       </div>
     </div>
   </section>
 
 
-  <div class="divider"></div>
+  <div class="dv"></div>
 
 
-  <!-- ============================================================
-       WAITLIST CTA
-  ============================================================ -->
-  <section id="waitlist" style="padding:96px 24px 112px;">
-    <div style="max-width:600px;margin:0 auto;text-align:center;" class="reveal">
-      <h2 style="font-size:clamp(2rem,5.5vw,3.2rem);font-weight:700;letter-spacing:-0.032em;color:var(--text);line-height:1.08;margin-bottom:16px;">
-        Ready to simplify token distribution?
-      </h2>
-      <p style="font-size:1rem;color:var(--muted);line-height:1.75;margin-bottom:40px;">
-        Join the waitlist and get early access when Themis opens to teams.
-      </p>
-
-      <form
-        id="cta-form"
-        style="display:flex;gap:8px;max-width:420px;margin:0 auto;flex-wrap:wrap;"
-        onsubmit="handleForm(event,'cta-form','cta-success')"
-      >
-        <input
-          type="email"
-          placeholder="Work email address"
-          required
-          class="input"
-          style="padding:13px 16px;flex:1;min-width:200px;"
-          aria-label="Email address for waitlist"
-        />
-        <button type="submit" class="btn-primary" style="padding:13px 22px;font-size:0.9rem;" id="cta-btn">
-          Get early access
-        </button>
-      </form>
-      <p id="cta-success" style="display:none;color:#86a8ff;font-size:0.875rem;margin-top:14px;">
-        You are on the list. We will be in touch soon.
-      </p>
+  <!-- ===== CTA ===== -->
+  <section id="cta">
+    <div class="w">
+      <div class="cta-box r">
+        <div class="cta-in">
+          <h2 class="cta-t">Ready to simplify token distribution?</h2>
+          <p class="cta-s">Join the waitlist and get early access when Themis opens to teams.</p>
+          <form class="cta-r" id="cf" onsubmit="sub(event,'cf','co')">
+            <input type="email" class="field" placeholder="Work email" required aria-label="Email for waitlist" />
+            <button type="submit" class="btn bf" id="cb">Get early access</button>
+          </form>
+          <p id="co" style="display:none;font-size:0.8rem;color:#8B85FF;margin-top:12px;">You are on the list. We will be in touch.</p>
+        </div>
+      </div>
     </div>
   </section>
 
 
-  <!-- ============================================================
-       FOOTER
-  ============================================================ -->
-  <footer style="border-top:1px solid var(--border);padding:36px 24px;">
-    <div style="max-width:1152px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;">
-
-      <div style="display:flex;align-items:center;gap:9px;">
-        <svg width="22" height="22" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-          <circle cx="13" cy="3.5" r="1.8" fill="#4f7fff"/>
-          <line x1="13" y1="5.3" x2="13" y2="21" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-          <line x1="3.5" y1="9" x2="22.5" y2="9" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-          <path d="M1 9 Q4 15.5 7 9" fill="none" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-          <path d="M19 9 Q22 15.5 25 9" fill="none" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-          <line x1="8" y1="21" x2="18" y2="21" stroke="#4f7fff" stroke-width="1.7" stroke-linecap="round"/>
-        </svg>
-        <span style="font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;color:var(--muted);">Themis</span>
-      </div>
-
-      <p style="font-size:0.78rem;color:var(--muted);">Token distribution protocol. Built on Solana.</p>
-
-      <div style="display:flex;gap:24px;">
-        <a href="#" class="footer-link">Docs</a>
-        <a href="#" class="footer-link">GitHub</a>
-        <a href="#" class="footer-link">Twitter</a>
+  <!-- ===== FOOTER ===== -->
+  <footer id="foot">
+    <div class="w">
+      <div class="foot-in">
+        <a href="#" class="logo">Themis</a>
+        <p class="foot-note">Token distribution protocol. Built on Solana.</p>
+        <div class="foot-ls">
+          <a href="#">Docs</a><a href="#">GitHub</a><a href="#">Twitter</a>
+        </div>
       </div>
     </div>
   </footer>
 
 
-  <!-- ============================================================
-       SCRIPTS
-  ============================================================ -->
   <script>
-    // Navbar scroll class
-    var navbar = document.getElementById('navbar');
-    window.addEventListener('scroll', function () {
-      navbar.classList.toggle('scrolled', window.scrollY > 24);
-    }, { passive: true });
+    /* ======================================================
+       CANVAS — drifting network
+    ====================================================== */
+    (function () {
+      var c = document.getElementById('cvs'), ctx = c.getContext('2d');
+      var W, H, pts, raf;
+      var N = 55, MAX = 148, COL = 'rgba(99,91,255,';
 
-    // Hero orb parallax + mouse follow
-    var orb1      = document.getElementById('orb1');
-    var noMotion  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var scrollTop = 0;
-    var mouseOffX = 0;
-    var mouseOffY = 0;
-
-    function updateOrb() {
-      if (!orb1 || noMotion) return;
-      var tx = -50 + (mouseOffX * 0.018);
-      var ty = (scrollTop * 0.22) + (mouseOffY * 0.010);
-      orb1.style.transform = 'translateX(calc(' + tx + '% + 0px)) translateY(' + ty + 'px)';
-    }
-
-    window.addEventListener('scroll', function () {
-      scrollTop = window.scrollY;
-      updateOrb();
-    }, { passive: true });
-
-    window.addEventListener('mousemove', function (e) {
-      mouseOffX = e.clientX - window.innerWidth  / 2;
-      mouseOffY = e.clientY - window.innerHeight / 2;
-      updateOrb();
-    }, { passive: true });
-
-    // Scroll reveal
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) entry.target.classList.add('in');
-      });
-    }, { threshold: 0.08, rootMargin: '0px 0px -36px 0px' });
-
-    document.querySelectorAll('.reveal').forEach(function (el) { observer.observe(el); });
-
-    // FAQ accordion
-    function toggleFaq(item) {
-      var answer = item.querySelector('.faq-answer');
-      var isOpen = item.classList.contains('faq-active');
-
-      document.querySelectorAll('.faq-item').forEach(function (i) {
-        i.classList.remove('faq-active');
-        i.querySelector('.faq-answer').classList.remove('open');
-      });
-
-      if (!isOpen) {
-        item.classList.add('faq-active');
-        answer.classList.add('open');
+      function resize() { W = c.width = window.innerWidth; H = c.height = window.innerHeight; }
+      function rnd(a,b) { return a + Math.random()*(b-a); }
+      function init() {
+        pts = [];
+        for (var i = 0; i < N; i++) pts.push({ x:rnd(0,W), y:rnd(0,H), vx:rnd(-0.14,0.14), vy:rnd(-0.10,0.10), s:rnd(0.9,2.1) });
       }
+      function tick() {
+        ctx.clearRect(0,0,W,H);
+        for (var i = 0; i < pts.length; i++) {
+          var a = pts[i]; a.x += a.vx; a.y += a.vy;
+          if (a.x < -20) a.x = W+20; if (a.x > W+20) a.x = -20;
+          if (a.y < -20) a.y = H+20; if (a.y > H+20) a.y = -20;
+          for (var j = i+1; j < pts.length; j++) {
+            var b = pts[j], dx = a.x-b.x, dy = a.y-b.y, d = Math.sqrt(dx*dx+dy*dy);
+            if (d < MAX) {
+              ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+              ctx.strokeStyle = COL+(0.13*(1-d/MAX))+')'; ctx.lineWidth = 0.5; ctx.stroke();
+            }
+          }
+          ctx.beginPath(); ctx.arc(a.x,a.y,a.s,0,Math.PI*2);
+          ctx.fillStyle = COL+'0.38)'; ctx.fill();
+        }
+        raf = requestAnimationFrame(tick);
+      }
+      window.addEventListener('resize', function(){ resize(); init(); }, { passive:true });
+      document.addEventListener('visibilitychange', function(){ document.hidden ? cancelAnimationFrame(raf) : tick(); });
+      resize(); init(); tick();
+    }());
+
+
+    /* ======================================================
+       SCROLL PROGRESS BAR
+    ====================================================== */
+    var prog = document.getElementById('prog');
+    function updateProg() {
+      var max = document.body.scrollHeight - window.innerHeight;
+      prog.style.width = (max > 0 ? (window.scrollY / max * 100) : 0) + '%';
     }
 
-    // Waitlist form
-    function handleForm(event, formId, successId) {
-      event.preventDefault();
-      var form    = document.getElementById(formId);
-      var success = document.getElementById(successId);
-      var btn     = form.querySelector('button[type="submit"]');
 
-      btn.disabled    = true;
-      btn.textContent = 'Joining...';
-
-      setTimeout(function () {
-        form.style.display    = 'none';
-        success.style.display = 'block';
-      }, 700);
+    /* ======================================================
+       PARALLAX — hero title
+    ====================================================== */
+    var htitle = document.querySelector('.h-title');
+    var noMot  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function updateParallax() {
+      if (noMot || !htitle) return;
+      htitle.style.transform = 'translateY(' + (window.scrollY * 0.07) + 'px)';
     }
 
-    // Mobile menu
-    var menuToggle = document.getElementById('menu-toggle');
-    var mobileMenu = document.getElementById('mobile-menu');
-    var iconOpen   = document.getElementById('icon-open');
-    var iconClose  = document.getElementById('icon-close');
-    var menuOpen   = false;
 
-    menuToggle.addEventListener('click', function () {
-      menuOpen = !menuOpen;
-      mobileMenu.style.display = menuOpen ? 'flex' : 'none';
-      iconOpen.style.display   = menuOpen ? 'none' : 'block';
-      iconClose.style.display  = menuOpen ? 'block' : 'none';
-      menuToggle.setAttribute('aria-expanded', String(menuOpen));
+    /* ======================================================
+       HORIZONTAL SCROLL — vesting types
+    ====================================================== */
+    var vestOut    = document.getElementById('vest-out');
+    var vestSticky = document.getElementById('vest-sticky');
+    var vestTrack  = document.getElementById('vest-track');
+    var vestDots   = document.querySelectorAll('.vd');
+    var vCards     = [document.getElementById('vc1'), document.getElementById('vc2'), document.getElementById('vc3')];
+    var drawnCards = {};
+
+    function initVestHeight() {
+      var h = window.innerHeight + 2 * window.innerWidth;
+      vestOut.style.height = h + 'px';
+    }
+
+    function updateVest() {
+      var rect     = vestOut.getBoundingClientRect();
+      var scrollH  = vestOut.offsetHeight - window.innerHeight;
+      var progress = Math.max(0, Math.min(1, -rect.top / scrollH));
+      var maxShift = vestTrack.scrollWidth - window.innerWidth;
+      var shift    = progress * maxShift;
+
+      vestTrack.style.transform = 'translateX(-' + shift + 'px)';
+
+      /* dot indicators */
+      var idx = Math.min(2, Math.floor(progress * 3));
+      vestDots.forEach(function(d, i) { d.classList.toggle('on', i === idx); });
+
+      /* draw SVG paths when card enters viewport */
+      vCards.forEach(function(card, i) {
+        if (!card) return;
+        var cardLeft  = i * window.innerWidth - shift;
+        var inView    = cardLeft > -window.innerWidth * 0.5 && cardLeft < window.innerWidth * 0.5;
+        if (inView && !drawnCards[i]) { card.classList.add('drawn'); drawnCards[i] = true; }
+      });
+    }
+
+
+    /* ======================================================
+       SCROLL HANDLER
+    ====================================================== */
+    window.addEventListener('scroll', function() {
+      updateProg();
+      updateParallax();
+      updateVest();
+      document.getElementById('nav').classList.toggle('on', window.scrollY > 28);
+    }, { passive: true });
+
+
+    /* ======================================================
+       SCROLL REVEALS
+    ====================================================== */
+    var ro = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); }});
+    }, { threshold: 0.07, rootMargin: '0px 0px -28px 0px' });
+    document.querySelectorAll('.r').forEach(function(el) { ro.observe(el); });
+
+
+    /* ======================================================
+       FEATURE CARDS — spotlight hover
+    ====================================================== */
+    document.querySelectorAll('.bc').forEach(function(card) {
+      card.addEventListener('mousemove', function(e) {
+        var rect = card.getBoundingClientRect();
+        card.style.setProperty('--bx', (e.clientX - rect.left) + 'px');
+        card.style.setProperty('--by', (e.clientY - rect.top)  + 'px');
+      });
     });
 
-    function closeMenu() {
-      menuOpen = false;
-      mobileMenu.style.display = 'none';
-      iconOpen.style.display   = 'block';
-      iconClose.style.display  = 'none';
-      menuToggle.setAttribute('aria-expanded', 'false');
+
+    /* ======================================================
+       FAQ
+    ====================================================== */
+    function tfq(item) {
+      var ans = item.querySelector('.fq-a'), open = item.classList.contains('on');
+      document.querySelectorAll('.fq').forEach(function(i) { i.classList.remove('on'); i.querySelector('.fq-a').classList.remove('on'); });
+      if (!open) { item.classList.add('on'); ans.classList.add('on'); }
     }
+
+
+    /* ======================================================
+       FORM
+    ====================================================== */
+    function sub(e, fid, oid) {
+      e.preventDefault();
+      var form = document.getElementById(fid), ok = document.getElementById(oid);
+      var btn  = form.querySelector('button[type="submit"]');
+      btn.disabled = true; btn.textContent = 'Joining...';
+      setTimeout(function() { form.style.display = 'none'; ok.style.display = 'block'; }, 650);
+    }
+
+
+    /* ======================================================
+       MOBILE MENU
+    ====================================================== */
+    var ham = document.getElementById('ham'), mob = document.getElementById('mob');
+    var icH = document.getElementById('icH'), icX = document.getElementById('icX');
+    var mop = false;
+
+    ham.addEventListener('click', function() {
+      mop = !mop;
+      mob.style.display = mop ? 'flex' : 'none';
+      icH.style.display = mop ? 'none' : 'block';
+      icX.style.display = mop ? 'block' : 'none';
+      ham.setAttribute('aria-expanded', String(mop));
+    });
+    function cm() { mop = false; mob.style.display='none'; icH.style.display='block'; icX.style.display='none'; ham.setAttribute('aria-expanded','false'); }
+
+
+    /* ======================================================
+       INIT
+    ====================================================== */
+    initVestHeight();
+    window.addEventListener('resize', function() { initVestHeight(); updateVest(); }, { passive: true });
+    updateProg();
+
+    /* draw first card on load */
+    setTimeout(function() {
+      var r0 = vestOut.getBoundingClientRect();
+      if (r0.top < window.innerHeight) { vCards[0] && vCards[0].classList.add('drawn'); drawnCards[0] = true; }
+    }, 400);
   </script>
 
 </body>
