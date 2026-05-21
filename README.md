@@ -1,56 +1,33 @@
-<div align="center">
-
 # Token Distribution Protocol
 
-A trustless, on-chain token vesting program built on Solana with Anchor.
-Lock tokens in a PDA-controlled escrow, define a schedule, and let recipients claim what they've earned — no manual steps, no intermediaries.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-
-</div>
-
----
+Token Distribution Protocol is a Solana/Anchor program and Next.js app for token vesting streams. Creators lock SPL tokens into a PDA-owned escrow, define a schedule, and recipients withdraw the amount that has vested.
 
 ## How it works
 
-Tokens are locked in a Program Derived Address (PDA) escrow at stream creation. The program tracks how much has vested using one of three schedules and releases only what the recipient has earned. No human — including the stream creator — can move the locked tokens directly.
+Tokens are locked in a Program Derived Address (PDA) escrow at stream creation. The program tracks how much has vested using one of three schedules and releases only what the recipient has earned. No wallet can move the locked tokens directly.
 
 Three vesting schedules are supported:
 
-- **Linear** — tokens unlock continuously from start to end
-- **Cliff + Linear** — zero tokens until the cliff date, then linear from cliff to end
-- **Milestone** — tokens unlock when a designated verifier marks each milestone complete
-
----
+- **Linear**: tokens unlock continuously from start to end.
+- **Cliff + Linear**: no tokens unlock until the cliff date, then vesting continues linearly.
+- **Milestone**: tokens unlock when a designated verifier marks each milestone complete.
 
 ## Folder structure
 
 ```
 token-distribution-protocol/
-├── contracts/                     # Anchor program (on-chain)
-│   ├── programs/
-│   │   └── token-distribution-protocol/
-│   │       └── src/
-│   │           ├── lib.rs         # Program entry point, instruction routing
-│   │           ├── constant.rs    # Shared constants (seeds, discriminator size)
-│   │           ├── error.rs       # VestingError enum — 16 custom error codes
-│   │           ├── event.rs       # Anchor events emitted by instructions
-│   │           ├── state/
-│   │           │   └── mod.rs     # StreamData, Milestone, ProtocolState structs
-│   │           └── instructions/
-│   │               ├── mod.rs
-│   │               ├── initialize.rs
-│   │               ├── create_stream.rs   # Arya (Week 4)
-│   │               ├── withdraw.rs        # Alex (Week 4)
-│   │               └── cancel.rs          # Alex (Week 4)
-│   ├── tests/
-│   │   └── token-distribution-protocol.ts
+├── contracts/                     # Anchor workspace
+│   ├── programs/token-distribution-protocol/src/
+│   ├── scripts/                   # Manual deployment helpers
+│   ├── tests/                     # Anchor TypeScript tests
 │   ├── Anchor.toml
 │   └── Cargo.toml
+├── frontend/                      # Next.js app
+│   ├── app/
+│   ├── components/
+│   └── lib/
 └── README.md
 ```
-
----
 
 ## Account structure
 
@@ -62,22 +39,18 @@ token-distribution-protocol/
 | `Creator Token Account`   | ATA      | Creator           | Source of tokens at creation                        |
 | `Recipient Token Account` | ATA      | Recipient         | Destination of claimed tokens                       |
 
-**StreamData PDA seeds:** `["stream", creator_pubkey, recipient_pubkey, stream_id_bytes]`
-
----
+`StreamData` PDA seeds: `["stream", creator_pubkey, recipient_pubkey, stream_id_bytes]`.
 
 ## Tech stack
 
 | Layer              | Choice                         | Why                                                         |
 | ------------------ | ------------------------------ | ----------------------------------------------------------- |
 | On-chain program   | Anchor 0.32.1 (Rust)           | Auto IDL, declarative account validation, industry standard |
-| Frontend (Week 5+) | Next.js + TypeScript           | File-based routing, Vercel preview deploys for BD demos     |
+| Frontend           | Next.js + TypeScript           | Wallet connection and stream management UI                  |
 | On-chain SDK       | `@coral-xyz/anchor`            | Reads IDL, typed instruction calls, Borsh serialization     |
 | Wallet             | `@solana/wallet-adapter-react` | Phantom, Backpack, Solflare in one hook                     |
 | Testing            | Anchor test suite (Mocha/Chai) | Auto-scaffolded, typed, error-code assertions               |
 | Local dev          | Solana test validator          | Ships with Solana CLI, zero extra setup                     |
-
----
 
 ## Prerequisites
 
@@ -121,32 +94,60 @@ pnpm --version
 
 ---
 
-## Setup
+## Setup contracts
+
+Install the Anchor workspace dependencies:
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/<org>/token-distribution-protocol.git
-cd token-distribution-protocol
-
-# 2. Install JS dependencies
 cd contracts
-pnpm install
-
-# 3. Generate a local keypair (skip if you already have one)
-solana-keygen new --outfile ~/.config/solana/id.json
-solana config set --keypair ~/.config/solana/id.json
-
-# 4. Set cluster to localnet for development
-solana config set --url localhost
+rtk pnpm install
 ```
 
----
+For local development, you can use the default Solana CLI wallet:
+
+```bash
+rtk solana-keygen new --outfile ~/.config/solana/id.json
+rtk solana config set --keypair ~/.config/solana/id.json
+rtk solana config set --url localhost
+```
+
+### Dedicated Mancer deploy wallet
+
+For deployment, use a dedicated wallet stored at the root of the Anchor workspace:
+
+```bash
+cd contracts
+rtk solana-keygen new --outfile ./mancer-deployer.json
+```
+
+The file `contracts/mancer-deployer.json` is ignored by git. Do not commit it, share it, or paste its contents anywhere.
+
+Check the wallet address:
+
+```bash
+rtk solana-keygen pubkey ./mancer-deployer.json
+```
+
+Use it as the active Solana CLI wallet:
+
+```bash
+rtk solana config set --keypair ./mancer-deployer.json
+rtk solana config set --url devnet
+rtk solana config get
+```
+
+Fund it on devnet:
+
+```bash
+rtk solana airdrop 5 --url devnet
+rtk solana balance --url devnet
+```
 
 ## Build
 
 ```bash
 cd contracts
-anchor build
+rtk anchor build
 ```
 
 The compiled program binary goes to `contracts/target/deploy/token_distribution_protocol.so`.
@@ -155,10 +156,8 @@ The IDL and TypeScript types land in `contracts/target/idl/` and `contracts/targ
 If you see a program ID mismatch warning, sync it:
 
 ```bash
-anchor keys sync
+rtk anchor keys sync
 ```
-
----
 
 ## Run tests
 
@@ -166,62 +165,192 @@ Tests run against a local validator that Anchor spins up automatically.
 
 ```bash
 cd contracts
-anchor test
+rtk anchor test
 ```
 
-Expected output (Week 3):
+Expected output:
 
 ```
-token-distribution-protocol
-  ✔ deploys successfully — program ID is set
-  ✔ initialize — executes and returns a transaction signature
-  ✔ create_stream — stub compiles and returns Ok
-  ✔ withdraw — stub compiles and returns Ok
-  ✔ cancel — stub compiles and returns Ok
-
-5 passing
+27 passing
 ```
 
 To run tests against a manually started validator:
 
 ```bash
 # Terminal 1
-solana-test-validator
+rtk solana-test-validator
 
 # Terminal 2
 cd contracts
-anchor test --skip-local-validator
+rtk anchor test --skip-local-validator
 ```
-
----
 
 ## Deploy to devnet
 
+Use the manual deployment script. It uses the active Solana CLI wallet unless `ANCHOR_WALLET` is set.
+
 ```bash
-# 1. Switch cluster
-solana config set --url devnet
-
-# 2. Airdrop SOL for deploy fees (devnet faucet)
-solana airdrop 5
-
-# 3. Build for deployment
 cd contracts
-anchor build
-
-# 4. Deploy
-anchor deploy --provider.cluster devnet
-
-# 5. Verify deployment
-solana program show <PROGRAM_ID>
+rtk pnpm run deploy:devnet
 ```
 
-The program ID is `J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3`.
-
-To run tests on devnet (slower, requires funded keypair):
+To deploy with the dedicated Mancer deploy wallet without changing your global Solana config:
 
 ```bash
 cd contracts
-anchor test --provider.cluster devnet
+ANCHOR_WALLET=./mancer-deployer.json rtk pnpm run deploy:devnet
+```
+
+Current devnet deployment:
+
+- Program ID: `J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3`
+- Devnet Explorer: [View program on Solana Explorer](https://explorer.solana.com/address/J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3?cluster=devnet)
+- Upgrade authority: `G5zy6qdVJ71Z1hP5QiGYkfyRLZ34CZaLBRQEYrNT1ocY`
+- ProgramData address: `HUXED9EDLgqxfB7xToBfajeQQTjDb9MM5TRDQ6MHmP9X`
+- Last deployed slot: `463910857`
+- Deploy signature: `3ELDie8q3t6yNwpRxfSEcsTvegoEFHWSjjYfrarNs8VJWDeeuc35iQDy5DvXhBqA1AeSJutbCEQcJV9BsDa3Yp4g`
+
+The deploy script runs:
+
+1. `solana config set --url devnet --keypair <wallet>`
+2. `solana balance`
+3. `anchor build`
+4. `anchor deploy --provider.cluster devnet`
+5. `solana program show <PROGRAM_ID>`
+
+## Setup frontend
+
+Install frontend dependencies:
+
+```bash
+cd frontend
+rtk pnpm install
+```
+
+Create `frontend/.env.local` for devnet:
+
+```env
+NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
+NEXT_PUBLIC_TDP_PROGRAM_ID=J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3
+```
+
+Run the Next.js app:
+
+```bash
+cd frontend
+rtk bun run dev
+```
+
+The local app runs at `http://localhost:3000`.
+
+The app supports creating linear/cliff streams, viewing streams for the connected wallet, withdrawing vested tokens, verifying milestones, and cancelling cancelable streams.
+
+### Analytics
+
+The frontend is already connected to Google Analytics through `frontend/app/layout.tsx`.
+
+- Google Analytics measurement ID: `G-RLN61Y19VN`
+- Script source: `https://www.googletagmanager.com/gtag/js`
+- Tracking is loaded with Next.js `Script` using the `afterInteractive` strategy.
+
+## Smart contract instructions
+
+### `initialize`
+
+Creates the protocol state PDA and stores the authority. This is a setup instruction kept from the project scaffold.
+
+### `create_stream`
+
+Creates a new vesting stream and locks tokens into escrow.
+
+The creator signs the transaction, provides the recipient, SPL mint, token amount, schedule times, stream type, and cancelability flag. The program creates:
+
+- `StreamData` PDA using `["stream", creator, recipient, stream_id]`
+- escrow token account PDA using `["escrow", stream_data]`
+
+Then it transfers tokens from the creator token account into the escrow token account. The escrow authority is the `StreamData` PDA, so only the program can release the funds.
+
+Supported stream types:
+
+- `0`: linear vesting from `start_time` to `end_time`
+- `1`: cliff + linear vesting, blocked until `cliff_time`
+- `2`: milestone vesting, unlocked by verified milestones
+
+### `withdraw`
+
+Lets the recipient claim vested tokens.
+
+The program calculates:
+
+```text
+claimable = vested_amount_now - amount_claimed
+```
+
+If `claimable` is greater than zero, the program signs with the `StreamData` PDA seeds and transfers tokens from escrow to the recipient associated token account. It then updates `amount_claimed`.
+
+### `cancel`
+
+Lets the creator cancel a cancelable stream before it is fully vested.
+
+The program calculates vested and unvested balances:
+
+- vested but unclaimed tokens go to the recipient
+- unvested tokens go back to the creator
+
+The stream is then marked as cancelled, which prevents further withdraws.
+
+### `add_milestone`
+
+Lets the creator add a milestone to a milestone-type stream.
+
+Each milestone stores:
+
+- token amount unlocked by that milestone
+- SHA-256 description hash
+- verifier public key
+- verification status
+
+The program prevents adding milestones after recipient activity has started and prevents the total milestone amount from exceeding the stream total.
+
+### `verify_milestone`
+
+Lets the designated verifier mark one milestone as complete.
+
+Only the verifier stored on that milestone can call this instruction. Once verified, that milestone's token amount becomes part of the recipient's vested balance and can be withdrawn through `withdraw`.
+
+## End-to-end local flow
+
+1. Build and test the program:
+
+```bash
+cd contracts
+rtk anchor build
+rtk anchor test
+```
+
+2. Create and fund the Mancer devnet deploy wallet:
+
+```bash
+cd contracts
+rtk solana-keygen new --outfile ./mancer-deployer.json
+rtk solana config set --keypair ./mancer-deployer.json
+rtk solana config set --url devnet
+rtk solana airdrop 5 --url devnet
+```
+
+3. Deploy:
+
+```bash
+cd contracts
+ANCHOR_WALLET=./mancer-deployer.json rtk pnpm run deploy:devnet
+```
+
+4. Start the frontend:
+
+```bash
+cd frontend
+rtk pnpm install
+rtk bun run dev
 ```
 
 ---
@@ -230,11 +359,12 @@ anchor test --provider.cluster devnet
 
 | Error                       | Fix                                                                                                          |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `anchor: command not found` | Run `avm use 0.32.1` and restart your terminal                                                               |
-| `Program id mismatch`       | Run `anchor keys sync` inside `contracts/`                                                                   |
-| `Error: Account not found`  | The test validator isn't running — run `anchor test` (auto-starts) or start `solana-test-validator` manually |
-| `insufficient funds`        | Run `solana airdrop 5`                                                                                       |
-| pnpm not found              | Run `npm install -g pnpm`                                                                                    |
+| `anchor: command not found` | Run `avm use 0.32.1` and restart your terminal                                                                   |
+| `Program id mismatch`       | Run `rtk anchor keys sync` inside `contracts/`                                                                   |
+| `Error: Account not found`  | The test validator is not running. Run `rtk anchor test` or start `rtk solana-test-validator` manually.           |
+| `insufficient funds`        | Run `rtk solana airdrop 5 --url devnet` for devnet.                                                             |
+| `Wallet not found`          | Set `ANCHOR_WALLET=./mancer-deployer.json` or run `rtk solana config set --keypair ./mancer-deployer.json`.      |
+| pnpm not found              | Run `npm install -g pnpm`.                                                                                        |
 
 ---
 
@@ -243,156 +373,3 @@ anchor test --provider.cluster devnet
 - Use `pnpm` for all JS package management — `npm` and `yarn` may cause lock file conflicts
 - Run `anchor build` before `anchor test` if you change Rust code and see stale IDL errors
 - The `contracts/rust-toolchain.toml` pins the Rust version — don't remove it
-
----
-
-## Working with agents
-
-This project uses Claude Code skills (specialized agent workflows) to accelerate development and enforce best practices. Skills provide domain-specific knowledge, structured workflows, and automated quality checks.
-
-### Why use agents?
-
-- **Faster iterations:** Pre-built workflows for common tasks (program setup, testing, deployment)
-- **Domain expertise:** Solana-specific patterns, security checks, and API best practices
-- **Consistency:** Enforced coding standards, test coverage, and UI/UX patterns
-- **Reduced errors:** Automated validation catches issues before they hit CI
-
-### Skills used in this project
-
-#### 1. **[solana-dev](https://github.com/solana-foundation/solana-dev-skill)**
-
-**Purpose:** End-to-end Solana development — Anchor programs, testing, deployment, client SDK generation
-
-**Use when:**
-
-- Building or modifying on-chain programs
-- Setting up testing infrastructure (LiteSVM, Mollusk, Surfpool)
-- Debugging Rust/Anchor errors
-- Generating typed clients from IDL
-- Deploying to devnet/mainnet
-
-**What it provides:**
-
-- Anchor best practices (account validation, CPI patterns, error handling)
-- Security checklist (integer overflow, PDA derivation, signer checks)
-- Testing patterns (unit tests with LiteSVM, integration tests with Surfpool)
-- Toolchain setup guidance (Rust/Solana/Anchor version compatibility)
-
-**Invoke:**
-
-```bash
-# In Claude Code
-User: "Build a withdraw instruction for linear vesting"
-Claude: *invokes solana-dev skill, implements with security checks + tests*
-```
-
-#### 2. [**ui-ux-pro-max**](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill)
-
-**Purpose:** Frontend design system, component architecture, accessibility, and UX patterns
-
-**Use when:**
-
-- Designing UI components (dashboards, forms, modals)
-- Building responsive layouts
-- Implementing design systems (colors, typography, spacing)
-- Optimizing user flows (onboarding, error states, loading states)
-
-**What it provides:**
-
-- React/Next.js component patterns
-- Tailwind CSS best practices
-- Accessibility guidelines (WCAG compliance, keyboard nav, screen reader support)
-- Wallet connection UX patterns
-
-**Invoke:**
-
-```bash
-# In Claude Code
-User: "Design a stream creation form with wallet connect"
-Claude: *invokes ui-ux-pro-max, builds accessible form with error handling*
-```
-
-#### 3. [**superpowers**](https://github.com/obra/superpowers)
-
-**Purpose:** Meta-skills for systematic problem-solving and development workflows
-
-**Sub-skills used:**
-
-- `brainstorming`: Explore requirements and design before implementation
-- `systematic-debugging`: Structured debugging workflow for test failures
-- `test-driven-development`: TDD workflow (test first, then implement)
-- `writing-plans`: Break complex tasks into step-by-step implementation plans
-- `verification-before-completion`: Final checks before marking work complete
-
-**Use when:**
-
-- Starting a new feature (brainstorming → planning → TDD)
-- Debugging failing tests (systematic-debugging)
-- Complex multi-step tasks (writing-plans → executing-plans)
-- Before claiming "done" (verification-before-completion)
-
-**What it provides:**
-
-- Structured workflows that prevent skipped steps
-- Quality gates (tests must pass, security checks, edge case coverage)
-- Clear deliverables (diffs, test output, deployment steps)
-
-**Invoke:**
-
-```bash
-# In Claude Code
-User: "Add milestone vesting support"
-Claude: *invokes brainstorming → solana-dev → TDD workflow*
-  1. Brainstorm requirements and edge cases
-  2. Plan implementation (state changes, validation, tests)
-  3. Write failing tests
-  4. Implement instruction
-  5. Verify all tests pass + security checks
-```
-
-### How to use these skills
-
-This project is configured to work with Agent CLIs (Claude Code, Codex, etc.) that support skill-based workflows.
-
-#### Basic usage
-
-**Auto-invoke (recommended):**
-Just describe what you want to build. The agent detects context and picks the right skill automatically.
-
-```bash
-# Example sessions
-You: "Build a withdraw instruction with linear vesting calculation"
-Agent: *auto-invokes solana-dev → implements with security checks + tests*
-
-You: "Fix the CI error with edition2024"
-Agent: *auto-invokes solana-dev → diagnoses version mismatch → fixes Cargo.toml + CI*
-
-You: "Design a stream creation form with wallet connect"
-Agent: *auto-invokes ui-ux-pro-max → builds accessible component*
-
-You: "Add milestone vesting support"
-Agent: *chains: brainstorming → solana-dev → TDD → verification*
-```
-
-**Manual invoke:**
-If you want to force a specific skill, use the skill command:
-
-```bash
-# Claude Code
-/skill solana-dev "implement cancel with escrow refund"
-/skill ui-ux-pro-max "design stream dashboard"
-/skill superpowers:brainstorming "plan milestone verification"
-
-# Codex
-"use solana-dev skill to add withdraw logic"
-
-# Other agents
-Check your agent's documentation for skill invocation syntax
-```
-
-#### Tips
-
-- **Let auto-detection work:** Describe the full task instead of just invoking a skill name. The agent gets better context.
-- **Skills chain automatically:** Complex tasks trigger multiple skills in sequence (brainstorming → implementation → testing → verification).
-- **Check available skills:** Run `/help skills` (Claude Code) or check `.claude/skills/` directory.
-- **Reduce token usage:** Use [rust-rtk](https://github.com/rtk-ai/rtk) to compress CLI output. Saves 60-90% tokens on commands like `git`, `cargo`, `anchor`. Hook-based, transparent.

@@ -1,0 +1,25 @@
+# AI/editor workflow artifacts
+.agents/
+.claude/
+.clone/
+.codex/
+.cursor/
+.continue/
+.aider*
+.playwright-mcp/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+skills-lock.json
+
+# GitHub automation generated outside the product code
+.github/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# OS/editor noise
+.DS_Store
+*.swp
