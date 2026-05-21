@@ -56,6 +56,9 @@ pub struct StreamData {
     /// If false, the cancel instruction is permanently blocked for this stream —
     /// a hardcoded payment guarantee for the recipient.
     pub is_cancelable: bool,
+    /// Set to true when the creator cancels the stream.
+    /// Persisted so downstream instructions (withdraw, add_milestone) can gate on it.
+    pub is_cancelled: bool,
     /// Number of milestones (0 for time-based streams).
     pub milestone_count: u8,
     /// Milestone conditions and unlock amounts. Only populated for stream_type == 2.

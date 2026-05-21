@@ -194,9 +194,9 @@ describe("withdraw", () => {
         stream.escrowTokenAccount,
         stream.recipientTokenAccount
       );
-      assert.fail("Expected NothingToClaim");
+      assert.fail("Expected NothingToWithdraw");
     } catch (err: any) {
-      assert.include(err.message ?? String(err), "NothingToClaim");
+      assert.include(err.message ?? String(err), "NothingToWithdraw");
     }
   });
 
@@ -252,7 +252,7 @@ describe("withdraw", () => {
         stream.recipientTokenAccount
       );
     } catch (err: any) {
-      assert.include(err.message ?? String(err), "NothingToClaim");
+      assert.include(err.message ?? String(err), "NothingToWithdraw");
       return;
     }
 

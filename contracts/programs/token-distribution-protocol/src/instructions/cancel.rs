@@ -21,9 +21,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{
-        close_account, transfer, CloseAccount, Mint, Token, TokenAccount, Transfer,
-    },
+    token::{transfer, Mint, Token, TokenAccount, Transfer},
 };
 
 use crate::{error::VestingError, state::StreamData};
@@ -40,8 +38,9 @@ pub struct Cancel<'info> {
     pub recipient: UncheckedAccount<'info>,
 
     /// The vesting schedule PDA.
-    /// Constraint: is_cancelable must be true — on-chain enforcement.
-    /// close = creator: rent lamports returned to the creator on successful cancel.
+    /// Constraints:
+    ///   is_cancelable        → StreamNotCancelable
+    ///   !is_cancelled        → AlreadyCancelled
     #[account(
         mut,
         seeds = [
@@ -55,7 +54,7 @@ pub struct Cancel<'info> {
         has_one = recipient @ VestingError::Unauthorized,
         has_one = mint @ VestingError::Unauthorized,
         constraint = stream_data.is_cancelable @ VestingError::StreamNotCancelable,
-        close = creator,
+        constraint = !stream_data.is_cancelled @ VestingError::AlreadyCancelled,
     )]
     pub stream_data: Account<'info, StreamData>,
 
@@ -106,6 +105,13 @@ pub fn handler(ctx: Context<Cancel>) -> Result<()> {
     let bump_arr = [ctx.accounts.stream_data.bump];
 
     let vested = ctx.accounts.stream_data.calculate_vested(now);
+
+    // Cannot cancel a fully-vested stream — all tokens already belong to recipient.
+    require!(
+        vested < ctx.accounts.stream_data.amount_total,
+        VestingError::FullyVested
+    );
+
     let earned_unclaimed = vested.saturating_sub(ctx.accounts.stream_data.amount_claimed);
     let unvested = ctx.accounts.stream_data.amount_total.saturating_sub(vested);
 
@@ -150,18 +156,13 @@ pub fn handler(ctx: Context<Cancel>) -> Result<()> {
         )?;
     }
 
-    // ── 4. Close escrow token account — rent to creator ──────────────────────
-    close_account(CpiContext::new_with_signer(
-        ctx.accounts.token_program.to_account_info(),
-        CloseAccount {
-            account: ctx.accounts.escrow_token_account.to_account_info(),
-            destination: ctx.accounts.creator.to_account_info(),
-            authority: ctx.accounts.stream_data.to_account_info(),
-        },
-        signer_seeds,
-    ))?;
-
-    // stream_data is closed by Anchor via close = creator on the account constraint.
+    // ── 4. Mark stream as cancelled ──────────────────────────────────────────
+    // Escrow is intentionally left open (empty) so subsequent cancel/withdraw
+    // calls can still load it as a valid TokenAccount. The is_cancelled guard
+    // on stream_data fires first, returning AlreadyCancelled or StreamExpired
+    // before any token operation is attempted. Closing the escrow here would
+    // cause account-load errors on those subsequent calls before the guard fires.
+    ctx.accounts.stream_data.is_cancelled = true;
 
     msg!(
         "cancel: {} tokens → recipient, {} tokens → creator",
