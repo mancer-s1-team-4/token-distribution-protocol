@@ -50,10 +50,34 @@ pub mod token_distribution_protocol {
         instructions::withdraw::handler(ctx)
     }
 
-    // ── cancel (Alex — Week 4 implementation) ────────────────────────────────
-    /// Creator terminates a cancelable stream. Vested tokens → recipient,
-    /// unvested → creator. Accounts closed, rent returned.
+    // ── cancel (Alex — Week 4 / Week 5 hardened) ─────────────────────────────
+    /// Creator terminates a cancelable stream. Vested → recipient,
+    /// unvested → creator. Errors: StreamNotCancelable, AlreadyCancelled, FullyVested.
     pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
         instructions::cancel::handler(ctx)
+    }
+
+    // ── add_milestone (Alex — Week 5) ────────────────────────────────────────
+    /// Appends a milestone entry to a Milestone-type stream. Called by the
+    /// creator after create_stream to configure each performance gate before
+    /// recipient activity begins.
+    pub fn add_milestone(
+        ctx: Context<AddMilestone>,
+        amount: u64,
+        description_hash: [u8; 32],
+        verifier: Pubkey,
+    ) -> Result<()> {
+        instructions::add_milestone::handler(ctx, amount, description_hash, verifier)
+    }
+
+    // ── verify_milestone (Alex — Week 5) ─────────────────────────────────────
+    /// Designated verifier marks a milestone as complete, unlocking its tokens
+    /// for the recipient to withdraw. BD insight: SClair (investor, 5/5 interest)
+    /// requires milestone-linked liquidity for performance-gated capital release.
+    pub fn verify_milestone(
+        ctx: Context<VerifyMilestone>,
+        milestone_index: u8,
+    ) -> Result<()> {
+        instructions::verify_milestone::handler(ctx, milestone_index)
     }
 }

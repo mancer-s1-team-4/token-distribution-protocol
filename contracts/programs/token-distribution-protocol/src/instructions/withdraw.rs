@@ -3,7 +3,7 @@
 // Logic:
 //   1. Verify signer is stream_data.recipient (enforced by has_one).
 //   2. Call calculate_vested(now) to get total tokens earned so far.
-//   3. claimable = vested - amount_claimed. Reject if 0 (NothingToClaim).
+//   3. claimable = vested - amount_claimed. Reject if 0 (NothingToWithdraw).
 //   4. CPI: transfer claimable tokens from escrow → recipient ATA.
 //      The escrow is a PDA-owned token account; the program signs with
 //      ["stream", creator, recipient, stream_id] seeds + bump.
@@ -40,6 +40,7 @@ pub struct Withdraw<'info> {
         bump = stream_data.bump,
         has_one = recipient @ VestingError::Unauthorized,
         has_one = mint @ VestingError::Unauthorized,
+        constraint = !stream_data.is_cancelled @ VestingError::StreamExpired,
     )]
     pub stream_data: Account<'info, StreamData>,
 
@@ -84,7 +85,7 @@ pub fn handler(ctx: Context<Withdraw>) -> Result<()> {
         .checked_sub(ctx.accounts.stream_data.amount_claimed)
         .unwrap_or(0);
 
-    require!(claimable > 0, VestingError::NothingToClaim);
+    require!(claimable > 0, VestingError::NothingToWithdraw);
 
     // Copy seed components into locals — they must outlive the signer_seeds slice.
     let creator_key = ctx.accounts.stream_data.creator;
