@@ -3,7 +3,7 @@
 // Logic:
 //   1. Verify signer is stream_data.recipient (enforced by has_one).
 //   2. Call calculate_vested(now) to get total tokens earned so far.
-//   3. claimable = vested - amount_claimed. Reject if 0 (NothingToClaim).
+//   3. claimable = vested - amount_claimed. Reject if 0 (NothingToWithdraw).
 //   4. CPI: transfer claimable tokens from escrow → recipient ATA.
 //      The escrow is a PDA-owned token account; the program signs with
 //      ["stream", creator, recipient, stream_id] seeds + bump.
