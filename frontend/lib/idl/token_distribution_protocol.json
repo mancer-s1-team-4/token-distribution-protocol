@@ -1,0 +1,1282 @@
+{
+  "address": "J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3",
+  "metadata": {
+    "name": "token_distribution_protocol",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "add_milestone",
+      "docs": [
+        "Appends a milestone entry to a Milestone-type stream. Called by the",
+        "creator after create_stream to configure each performance gate before",
+        "recipient activity begins."
+      ],
+      "discriminator": [
+        165,
+        18,
+        177,
+        128,
+        204,
+        172,
+        23,
+        249
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "docs": [
+            "Only the stream creator may append milestones."
+          ],
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "stream_data"
+          ]
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "stream_data",
+          "docs": [
+            "The vesting schedule PDA.",
+            "Constraints:",
+            "has_one = creator        → Unauthorized",
+            "stream_type == Milestone → InvalidStreamType",
+            "!is_cancelled            → StreamExpired",
+            "milestones.len() < MAX   → TooManyMilestones"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "account",
+                "path": "stream_data.stream_id",
+                "account": "StreamData"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "description_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "verifier",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "cancel",
+      "docs": [
+        "Creator terminates a cancelable stream. Vested → recipient,",
+        "unvested → creator. Stream and escrow accounts remain open so later",
+        "calls return clear program errors. Errors: StreamNotCancelable,",
+        "AlreadyCancelled, FullyVested."
+      ],
+      "discriminator": [
+        232,
+        219,
+        223,
+        41,
+        219,
+        236,
+        220,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "docs": [
+            "The creator must sign. Verified by has_one on stream_data."
+          ],
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "stream_data"
+          ]
+        },
+        {
+          "name": "recipient",
+          "docs": [
+            "Identity enforced by has_one on stream_data."
+          ],
+          "writable": true,
+          "relations": [
+            "stream_data"
+          ]
+        },
+        {
+          "name": "stream_data",
+          "docs": [
+            "The vesting schedule PDA.",
+            "Constraints:",
+            "is_cancelable        → StreamNotCancelable",
+            "!is_cancelled        → AlreadyCancelled"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "account",
+                "path": "stream_data.stream_id",
+                "account": "StreamData"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "PDA-owned escrow.",
+            "Left open after token transfers so repeated calls can load the account",
+            "and return clear program errors."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stream_data"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient_token_account",
+          "docs": [
+            "Recipient's ATA — receives any vested-but-unclaimed tokens."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "creator_token_account",
+          "docs": [
+            "Creator's ATA — receives unvested tokens returned from escrow."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "stream_data"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_stream",
+      "docs": [
+        "Locks tokens in a PDA-owned escrow and writes the vesting schedule."
+      ],
+      "discriminator": [
+        71,
+        188,
+        111,
+        127,
+        108,
+        40,
+        229,
+        158
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "docs": [
+            "The wallet creating and funding the stream. Pays rent for all new accounts."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "recipient",
+          "docs": [
+            "Enforced via has_one in withdraw and cancel."
+          ]
+        },
+        {
+          "name": "stream_data",
+          "docs": [
+            "The vesting schedule PDA.",
+            "Seeds: [\"stream\", creator, recipient, stream_id.to_le_bytes()]"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "arg",
+                "path": "stream_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "PDA-owned escrow that holds the locked tokens.",
+            "Seeds: [\"escrow\", stream_data]",
+            "Authority is stream_data so only the program can move tokens out."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stream_data"
+              }
+            ]
+          }
+        },
+        {
+          "name": "creator_token_account",
+          "docs": [
+            "Creator's source ATA — tokens are pulled from here into escrow."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "mint",
+          "docs": [
+            "The SPL token being vested."
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "stream_id",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "start_time",
+          "type": "i64"
+        },
+        {
+          "name": "cliff_time",
+          "type": "i64"
+        },
+        {
+          "name": "end_time",
+          "type": "i64"
+        },
+        {
+          "name": "stream_type",
+          "type": "u8"
+        },
+        {
+          "name": "is_cancelable",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [],
+      "args": []
+    },
+    {
+      "name": "verify_milestone",
+      "docs": [
+        "Designated verifier marks a milestone as complete, unlocking its tokens",
+        "for the recipient to withdraw. BD insight: SClair (investor, 5/5 interest)",
+        "requires milestone-linked liquidity for performance-gated capital release."
+      ],
+      "discriminator": [
+        33,
+        124,
+        38,
+        194,
+        150,
+        153,
+        90,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "verifier",
+          "docs": [
+            "The verifier stored in the target milestone must sign.",
+            "We cannot validate this at the account constraint level (it depends on",
+            "the milestone_index argument), so the check lives in the handler."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "creator"
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "stream_data",
+          "docs": [
+            "The vesting schedule PDA.",
+            "must be a Milestone-type stream; handler validates milestone_index."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "account",
+                "path": "stream_data.stream_id",
+                "account": "StreamData"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "milestone_index",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "Recipient claims vested tokens. Calculates claimable = vested - amount_claimed."
+      ],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "recipient",
+          "docs": [
+            "The recipient must sign — ensures nobody else can claim on their behalf."
+          ],
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "stream_data"
+          ]
+        },
+        {
+          "name": "creator"
+        },
+        {
+          "name": "stream_data",
+          "docs": [
+            "The vesting schedule PDA.",
+            "Seeds: [\"stream\", creator, recipient, stream_id.to_le_bytes()]",
+            "has_one = recipient enforces that the signer is the rightful claimant."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "account",
+                "path": "stream_data.stream_id",
+                "account": "StreamData"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_token_account",
+          "docs": [
+            "PDA-owned escrow holding the locked tokens.",
+            "Seeds: [\"escrow\", stream_data]"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "stream_data"
+              }
+            ]
+          }
+        },
+        {
+          "name": "recipient_token_account",
+          "docs": [
+            "Recipient's token account for this mint.",
+            "Created automatically if it doesn't exist yet (init_if_needed)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "mint",
+          "docs": [
+            "SPL token mint — verified transitively via stream_data.has_one."
+          ],
+          "relations": [
+            "stream_data"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "StreamData",
+      "discriminator": [
+        61,
+        89,
+        148,
+        141,
+        154,
+        81,
+        86,
+        113
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "Initialized",
+      "discriminator": [
+        208,
+        213,
+        115,
+        98,
+        115,
+        82,
+        201,
+        209
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidAmount",
+      "msg": "amount must be greater than zero"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidTimeRange",
+      "msg": "end_time must be after start_time"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidCliffTime",
+      "msg": "cliff_time must be within [start_time, end_time]"
+    },
+    {
+      "code": 6003,
+      "name": "InsufficientFunds",
+      "msg": "creator token balance is insufficient"
+    },
+    {
+      "code": 6004,
+      "name": "SelfVesting",
+      "msg": "creator and recipient cannot be the same wallet"
+    },
+    {
+      "code": 6005,
+      "name": "MilestoneAmountMismatch",
+      "msg": "milestone amounts must sum to amount_total"
+    },
+    {
+      "code": 6006,
+      "name": "TooManyMilestones",
+      "msg": "maximum of 20 milestones allowed per stream"
+    },
+    {
+      "code": 6007,
+      "name": "Unauthorized",
+      "msg": "signer is not authorized for this instruction"
+    },
+    {
+      "code": 6008,
+      "name": "StreamNotStarted",
+      "msg": "stream has not started yet"
+    },
+    {
+      "code": 6009,
+      "name": "NothingToWithdraw",
+      "msg": "no tokens are available to withdraw at this time"
+    },
+    {
+      "code": 6010,
+      "name": "StreamNotCancelable",
+      "msg": "this stream does not allow cancellation"
+    },
+    {
+      "code": 6011,
+      "name": "StreamAlreadyComplete",
+      "msg": "stream is already fully claimed"
+    },
+    {
+      "code": 6012,
+      "name": "AlreadyCancelled",
+      "msg": "stream has already been cancelled"
+    },
+    {
+      "code": 6013,
+      "name": "FullyVested",
+      "msg": "stream is already fully vested and cannot be cancelled"
+    },
+    {
+      "code": 6014,
+      "name": "StreamExpired",
+      "msg": "stream has been cancelled"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidMilestoneIndex",
+      "msg": "milestone index out of bounds"
+    },
+    {
+      "code": 6016,
+      "name": "MilestoneAlreadyVerified",
+      "msg": "this milestone has already been verified"
+    },
+    {
+      "code": 6017,
+      "name": "ArithmeticOverflow",
+      "msg": "arithmetic overflow in vesting calculation"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidStreamType",
+      "msg": "invalid stream type — must be 0 (Linear), 1 (Cliff+Linear), or 2 (Milestone)"
+    }
+  ],
+  "types": [
+    {
+      "name": "Initialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "program_id",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Milestone",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "amount",
+            "docs": [
+              "Tokens unlocked when this milestone is verified."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "description_hash",
+            "docs": [
+              "SHA-256 hash of the milestone description string — fixed-size, prevents",
+              "unbounded on-chain storage while still allowing off-chain verification."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "is_verified",
+            "docs": [
+              "Flipped to true by verify_milestone — this is what allows withdrawal of",
+              "this milestone's tranche."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "verifier",
+            "docs": [
+              "Only this pubkey may call verify_milestone for this entry.",
+              "Can be an oracle, a multisig member, or a DAO treasury."
+            ],
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StreamData",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "docs": [
+              "Wallet that created and funded the stream."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "docs": [
+              "Wallet that receives vested tokens."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "docs": [
+              "SPL token mint being distributed."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "escrow_token_account",
+            "docs": [
+              "Address of the PDA-owned escrow token account."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "stream_id",
+            "docs": [
+              "Unique ID used to derive this PDA — caller-chosen, allows multiple",
+              "parallel streams between the same two wallets."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "amount_total",
+            "docs": [
+              "Total tokens locked at creation (raw units)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "amount_claimed",
+            "docs": [
+              "Running total of tokens already withdrawn — the on-chain audit trail.",
+              "Incremented on every successful withdraw call."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "start_time",
+            "docs": [
+              "Unix timestamp when vesting begins."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "cliff_time",
+            "docs": [
+              "Unix timestamp of first unlock.",
+              "Set equal to start_time if no cliff is wanted."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "end_time",
+            "docs": [
+              "Unix timestamp when all tokens are fully vested."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "stream_type",
+            "docs": [
+              "0 = Linear  |  1 = Cliff + Linear  |  2 = Milestone"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "is_cancelable",
+            "docs": [
+              "If false, the cancel instruction is permanently blocked for this stream —",
+              "a hardcoded payment guarantee for the recipient."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "is_cancelled",
+            "docs": [
+              "Set to true when the creator cancels the stream.",
+              "Persisted so downstream instructions (withdraw, add_milestone) can gate on it."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "milestone_count",
+            "docs": [
+              "Number of milestones (0 for time-based streams)."
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "milestones",
+            "docs": [
+              "Milestone conditions and unlock amounts. Only populated for stream_type == 2."
+            ],
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "Milestone"
+                }
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA canonical bump — stored to avoid recomputing on every instruction."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}

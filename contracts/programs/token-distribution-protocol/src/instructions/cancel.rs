@@ -59,7 +59,8 @@ pub struct Cancel<'info> {
     pub stream_data: Account<'info, StreamData>,
 
     /// PDA-owned escrow.
-    /// Closed after token transfers so no lamports are stranded.
+    /// Left open after token transfers so repeated calls can load the account
+    /// and return clear program errors.
     #[account(
         mut,
         seeds = [b"escrow", stream_data.key().as_ref()],
