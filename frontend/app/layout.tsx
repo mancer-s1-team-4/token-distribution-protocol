@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Token Distribution Protocol",
+  title: "Vestra",
   description: "Solana-based token vesting and stream distribution",
 };
 
@@ -44,7 +44,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className="min-h-full bg-slate-50 text-slate-950">
+      <body className="min-h-full bg-[#A7E6FF]/20 text-[#050C9C]">
         <WalletProvider>{children}</WalletProvider>
       </body>
     </html>

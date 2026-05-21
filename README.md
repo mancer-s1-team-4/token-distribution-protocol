@@ -1,6 +1,6 @@
-# Token Distribution Protocol
+# Vestra
 
-Token Distribution Protocol is a Solana/Anchor program and Next.js app for token vesting streams. Creators lock SPL tokens into a PDA-owned escrow, define a schedule, and recipients withdraw the amount that has vested.
+Vestra is a Solana/Anchor program and Next.js app for token vesting streams. Creators lock SPL tokens into a PDA-owned escrow, define a schedule, and recipients withdraw the amount that has vested.
 
 ## How it works
 

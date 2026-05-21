@@ -44,15 +44,15 @@ export default function CreateStreamPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-8">
-      <header className="mb-8 flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-8 flex flex-col gap-4 border-b border-[#3ABEF9]/35 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <Link href="/streams" className="text-sm font-medium text-blue-700">
+          <Link href="/streams" className="text-sm font-medium text-[#3572EF]">
             Back to streams
           </Link>
-          <h1 className="mt-3 text-3xl font-bold text-slate-950">
+          <h1 className="mt-3 text-3xl font-bold text-[#050C9C]">
             Create stream
           </h1>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-[#050C9C]/70">
             Lock SPL tokens and define when the recipient can withdraw.
           </p>
         </div>
@@ -61,7 +61,7 @@ export default function CreateStreamPage() {
 
       <form
         onSubmit={submit}
-        className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+        className="grid gap-5 rounded-lg border border-[#3ABEF9]/45 bg-white p-5 shadow-sm"
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Recipient wallet">
@@ -71,7 +71,7 @@ export default function CreateStreamPage() {
               onChange={(event) =>
                 setForm((value) => ({ ...value, recipient: event.target.value }))
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
               placeholder="Recipient public key"
             />
           </Field>
@@ -83,7 +83,7 @@ export default function CreateStreamPage() {
               onChange={(event) =>
                 setForm((value) => ({ ...value, mint: event.target.value }))
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
               placeholder="SPL mint address"
             />
           </Field>
@@ -96,7 +96,7 @@ export default function CreateStreamPage() {
               onChange={(event) =>
                 setForm((value) => ({ ...value, amount: event.target.value }))
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
               placeholder="Raw token units"
             />
           </Field>
@@ -109,7 +109,7 @@ export default function CreateStreamPage() {
               onChange={(event) =>
                 setForm((value) => ({ ...value, streamId: event.target.value }))
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
             />
           </Field>
 
@@ -121,7 +121,7 @@ export default function CreateStreamPage() {
               onChange={(event) =>
                 setForm((value) => ({ ...value, startDate: event.target.value }))
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
             />
           </Field>
 
@@ -132,7 +132,7 @@ export default function CreateStreamPage() {
               onChange={(event) =>
                 setForm((value) => ({ ...value, cliffDate: event.target.value }))
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
             />
           </Field>
 
@@ -144,7 +144,7 @@ export default function CreateStreamPage() {
               onChange={(event) =>
                 setForm((value) => ({ ...value, endDate: event.target.value }))
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
             />
           </Field>
 
@@ -157,7 +157,7 @@ export default function CreateStreamPage() {
                   streamType: Number(event.target.value) as StreamType,
                 }))
               }
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
             >
               <option value={0}>Linear</option>
               <option value={1}>Cliff + linear</option>
@@ -166,7 +166,7 @@ export default function CreateStreamPage() {
           </Field>
         </div>
 
-        <label className="flex items-center gap-3 text-sm text-slate-700">
+        <label className="flex items-center gap-3 text-sm text-[#050C9C]/80">
           <input
             type="checkbox"
             checked={form.isCancelable}
@@ -181,12 +181,12 @@ export default function CreateStreamPage() {
           Creator can cancel unvested tokens
         </label>
 
-        <div className="flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="min-h-5 text-sm text-slate-600">{status}</p>
+        <div className="flex flex-col gap-3 border-t border-[#A7E6FF] pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="min-h-5 text-sm text-[#050C9C]/70">{status}</p>
           <button
             type="submit"
             disabled={!wallet.connected || isSubmitting}
-            className="rounded-md bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-md bg-[#050C9C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#3572EF] disabled:cursor-not-allowed disabled:bg-[#A7E6FF]"
           >
             {isSubmitting ? "Submitting..." : "Create stream"}
           </button>
@@ -204,7 +204,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-medium text-slate-700">
+    <label className="grid gap-2 text-sm font-medium text-[#050C9C]/80">
       {label}
       {children}
     </label>

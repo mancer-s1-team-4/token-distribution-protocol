@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #effaff;
+  --foreground: #050c9c;
+  --vestra-primary: #050c9c;
+  --vestra-action: #3572ef;
+  --vestra-accent: #3abef9;
+  --vestra-soft: #a7e6ff;
 }
 
 @theme inline {
@@ -22,5 +26,5 @@ button,
 a,
 input,
 select {
-  outline-color: #2563eb;
+  outline-color: var(--vestra-action);
 }
