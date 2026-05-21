@@ -52,7 +52,9 @@ pub mod token_distribution_protocol {
 
     // ── cancel (Alex — Week 4 / Week 5 hardened) ─────────────────────────────
     /// Creator terminates a cancelable stream. Vested → recipient,
-    /// unvested → creator. Errors: StreamNotCancelable, AlreadyCancelled, FullyVested.
+    /// unvested → creator. Stream and escrow accounts remain open so later
+    /// calls return clear program errors. Errors: StreamNotCancelable,
+    /// AlreadyCancelled, FullyVested.
     pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
         instructions::cancel::handler(ctx)
     }

@@ -232,6 +232,7 @@ Create `frontend/.env.local` for devnet:
 ```env
 NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
 NEXT_PUBLIC_TDP_PROGRAM_ID=J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-RLN61Y19VN
 ```
 
 Run the Next.js app:
@@ -250,8 +251,9 @@ The app supports creating linear/cliff streams, viewing streams for the connecte
 The frontend is already connected to Google Analytics through `frontend/app/layout.tsx`.
 
 - Google Analytics measurement ID: `G-RLN61Y19VN`
+- The measurement ID is read from `NEXT_PUBLIC_GA_MEASUREMENT_ID`.
 - Script source: `https://www.googletagmanager.com/gtag/js`
-- Tracking is loaded with Next.js `Script` using the `afterInteractive` strategy.
+- Tracking is loaded with Next.js `Script` using the `afterInteractive` strategy only when the env var is configured.
 
 ## Smart contract instructions
 

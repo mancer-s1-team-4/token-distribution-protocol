@@ -60,6 +60,9 @@ export type CreateStreamInput = {
   isCancelable: boolean;
 };
 
+const STREAM_DATA_CREATOR_OFFSET = 8;
+const STREAM_DATA_RECIPIENT_OFFSET = STREAM_DATA_CREATOR_OFFSET + 32;
+
 function u64Le(value: anchor.BN) {
   return Uint8Array.from(value.toArray("le", 8));
 }
@@ -157,26 +160,49 @@ export async function fetchWalletStreams(
   connection: Connection,
   wallet: WalletContextState
 ) {
-  if (!wallet.publicKey) {
+  const walletPublicKey = wallet.publicKey;
+
+  if (!walletPublicKey) {
     return [];
   }
 
   const program = getProgram(connection, wallet);
-  const rows = (await (
+  const streamData = (
     program.account as unknown as {
-      streamData: { all: () => Promise<StreamAccount[]> };
+      streamData: {
+        all: (
+          filters?: anchor.web3.GetProgramAccountsFilter[]
+        ) => Promise<StreamAccount[]>;
+      };
     }
-  ).streamData.all()) as StreamAccount[];
+  ).streamData;
 
-  return rows
-    .filter((row) => {
-      const account = row.account;
+  const [createdStreams, recipientStreams] = await Promise.all([
+    streamData.all([
+      {
+        memcmp: {
+          offset: STREAM_DATA_CREATOR_OFFSET,
+          bytes: walletPublicKey.toBase58(),
+        },
+      },
+    ]),
+    streamData.all([
+      {
+        memcmp: {
+          offset: STREAM_DATA_RECIPIENT_OFFSET,
+          bytes: walletPublicKey.toBase58(),
+        },
+      },
+    ]),
+  ]);
 
-      return (
-        account.creator.equals(wallet.publicKey!) ||
-        account.recipient.equals(wallet.publicKey!)
-      );
-    })
+  const rowsByAddress = new Map<string, StreamAccount>();
+
+  for (const row of [...createdStreams, ...recipientStreams]) {
+    rowsByAddress.set(row.publicKey.toBase58(), row);
+  }
+
+  return [...rowsByAddress.values()]
     .sort((a, b) => b.account.streamId.cmp(a.account.streamId));
 }
 

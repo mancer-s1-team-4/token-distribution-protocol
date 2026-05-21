@@ -8,10 +8,109 @@
   },
   "instructions": [
     {
+      "name": "add_milestone",
+      "docs": [
+        "Appends a milestone entry to a Milestone-type stream. Called by the",
+        "creator after create_stream to configure each performance gate before",
+        "recipient activity begins."
+      ],
+      "discriminator": [
+        165,
+        18,
+        177,
+        128,
+        204,
+        172,
+        23,
+        249
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "docs": [
+            "Only the stream creator may append milestones."
+          ],
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "stream_data"
+          ]
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "stream_data",
+          "docs": [
+            "The vesting schedule PDA.",
+            "Constraints:",
+            "has_one = creator        → Unauthorized",
+            "stream_type == Milestone → InvalidStreamType",
+            "!is_cancelled            → StreamExpired",
+            "milestones.len() < MAX   → TooManyMilestones"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "account",
+                "path": "stream_data.stream_id",
+                "account": "StreamData"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "description_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "verifier",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
       "name": "cancel",
       "docs": [
-        "Creator terminates a cancelable stream. Vested tokens → recipient,",
-        "unvested → creator. Accounts closed, rent returned."
+        "Creator terminates a cancelable stream. Vested → recipient,",
+        "unvested → creator. Stream and escrow accounts remain open so later",
+        "calls return clear program errors. Errors: StreamNotCancelable,",
+        "AlreadyCancelled, FullyVested."
       ],
       "discriminator": [
         232,
@@ -49,8 +148,9 @@
           "name": "stream_data",
           "docs": [
             "The vesting schedule PDA.",
-            "Constraint: is_cancelable must be true — on-chain enforcement.",
-            "close = creator: rent lamports returned to the creator on successful cancel."
+            "Constraints:",
+            "is_cancelable        → StreamNotCancelable",
+            "!is_cancelled        → AlreadyCancelled"
           ],
           "writable": true,
           "pda": {
@@ -86,7 +186,8 @@
           "name": "escrow_token_account",
           "docs": [
             "PDA-owned escrow.",
-            "Closed after token transfers so no lamports are stranded."
+            "Left open after token transfers so repeated calls can load the account",
+            "and return clear program errors."
           ],
           "writable": true,
           "pda": {
@@ -568,6 +669,88 @@
       "args": []
     },
     {
+      "name": "verify_milestone",
+      "docs": [
+        "Designated verifier marks a milestone as complete, unlocking its tokens",
+        "for the recipient to withdraw. BD insight: SClair (investor, 5/5 interest)",
+        "requires milestone-linked liquidity for performance-gated capital release."
+      ],
+      "discriminator": [
+        33,
+        124,
+        38,
+        194,
+        150,
+        153,
+        90,
+        227
+      ],
+      "accounts": [
+        {
+          "name": "verifier",
+          "docs": [
+            "The verifier stored in the target milestone must sign.",
+            "We cannot validate this at the account constraint level (it depends on",
+            "the milestone_index argument), so the check lives in the handler."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "creator"
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "stream_data",
+          "docs": [
+            "The vesting schedule PDA.",
+            "must be a Milestone-type stream; handler validates milestone_index."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  114,
+                  101,
+                  97,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "account",
+                "path": "stream_data.stream_id",
+                "account": "StreamData"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "milestone_index",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "withdraw",
       "docs": [
         "Recipient claims vested tokens. Calculates claimable = vested - amount_claimed."
@@ -858,8 +1041,8 @@
     },
     {
       "code": 6009,
-      "name": "NothingToClaim",
-      "msg": "no tokens are available to claim at this time"
+      "name": "NothingToWithdraw",
+      "msg": "no tokens are available to withdraw at this time"
     },
     {
       "code": 6010,
@@ -873,21 +1056,36 @@
     },
     {
       "code": 6012,
+      "name": "AlreadyCancelled",
+      "msg": "stream has already been cancelled"
+    },
+    {
+      "code": 6013,
+      "name": "FullyVested",
+      "msg": "stream is already fully vested and cannot be cancelled"
+    },
+    {
+      "code": 6014,
+      "name": "StreamExpired",
+      "msg": "stream has been cancelled"
+    },
+    {
+      "code": 6015,
       "name": "InvalidMilestoneIndex",
       "msg": "milestone index out of bounds"
     },
     {
-      "code": 6013,
+      "code": 6016,
       "name": "MilestoneAlreadyVerified",
       "msg": "this milestone has already been verified"
     },
     {
-      "code": 6014,
+      "code": 6017,
       "name": "ArithmeticOverflow",
       "msg": "arithmetic overflow in vesting calculation"
     },
     {
-      "code": 6015,
+      "code": 6018,
       "name": "InvalidStreamType",
       "msg": "invalid stream type — must be 0 (Linear), 1 (Cliff+Linear), or 2 (Milestone)"
     }
@@ -1039,6 +1237,14 @@
             "docs": [
               "If false, the cancel instruction is permanently blocked for this stream —",
               "a hardcoded payment guarantee for the recipient."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "is_cancelled",
+            "docs": [
+              "Set to true when the creator cancels the stream.",
+              "Persisted so downstream instructions (withdraw, add_milestone) can gate on it."
             ],
             "type": "bool"
           },
