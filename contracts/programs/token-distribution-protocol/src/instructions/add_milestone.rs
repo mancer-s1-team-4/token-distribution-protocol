@@ -45,7 +45,7 @@ pub struct AddMilestone<'info> {
     ///   has_one = creator        → Unauthorized
     ///   stream_type == Milestone → InvalidStreamType
     ///   !is_cancelled            → StreamExpired
-    ///   milestone_count < MAX    → TooManyMilestones
+    ///   milestones.len() < MAX   → TooManyMilestones
     #[account(
         mut,
         seeds = [
@@ -59,7 +59,7 @@ pub struct AddMilestone<'info> {
         constraint = stream_data.stream_type == StreamData::STREAM_TYPE_MILESTONE
             @ VestingError::InvalidStreamType,
         constraint = !stream_data.is_cancelled @ VestingError::StreamExpired,
-        constraint = (stream_data.milestone_count as usize) < (StreamData::MAX_MILESTONES as usize)
+        constraint = stream_data.milestones.len() < (StreamData::MAX_MILESTONES as usize)
             @ VestingError::TooManyMilestones,
     )]
     pub stream_data: Account<'info, StreamData>,
