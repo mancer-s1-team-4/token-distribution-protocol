@@ -5,7 +5,13 @@ import { useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
-import { createStreamTx, type CreateStreamInput, type StreamType } from "@/lib/tokenDistribution";
+import {
+  MOCK_TOKEN_MINT_AMOUNT,
+  createStreamTx,
+  mintMockTokensTx,
+  type CreateStreamInput,
+  type StreamType,
+} from "@/lib/tokenDistribution";
 
 const initialForm: CreateStreamInput = {
   streamId: Date.now().toString(),
@@ -42,6 +48,7 @@ export default function CreateStreamPage() {
   const [status, setStatus] = useState("");
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMintingMock, setIsMintingMock] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
 
   const scheduleLabels: Record<number, string> = {
@@ -75,6 +82,31 @@ export default function CreateStreamPage() {
       setIsReviewing(false);
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleMintMockTokens() {
+    setIsMintingMock(true);
+    setIsError(false);
+    setStatus("Minting mock tokens...");
+
+    try {
+      const { signature, mockMint } = await mintMockTokensTx(connection, wallet);
+      setForm((value) => ({
+        ...value,
+        mint: mockMint.toBase58(),
+        amount: value.amount || "1000",
+      }));
+      setStatus(
+        `Minted ${MOCK_TOKEN_MINT_AMOUNT} mock tokens. Mock mint: ${mockMint.toBase58()}. Transaction: ${signature}`
+      );
+      setIsError(false);
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : "Transaction failed.";
+      setStatus(friendlyError(raw));
+      setIsError(true);
+    } finally {
+      setIsMintingMock(false);
     }
   }
 
@@ -210,6 +242,23 @@ export default function CreateStreamPage() {
           onSubmit={handleReview}
           className="grid gap-5 rounded-lg border border-border bg-card p-5 shadow-sm"
         >
+          <div className="flex flex-col gap-3 rounded-md border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Mock token for testing</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Mint demo tokens to your wallet and use them for this vesting agreement.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleMintMockTokens()}
+              disabled={!wallet.connected || isMintingMock}
+              className="min-h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
+            >
+              {isMintingMock ? "Minting..." : "Mint mock tokens"}
+            </button>
+          </div>
+
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Recipient wallet" hint="The wallet address that will receive the tokens.">
               <input

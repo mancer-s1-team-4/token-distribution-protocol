@@ -19,6 +19,13 @@ pub mod token_distribution_protocol {
         instructions::initialize::handler(ctx)
     }
 
+    // ── mock token faucet ────────────────────────────────────────────────────
+    /// Mints demo-only mock tokens to the caller so the website can be tested
+    /// without requiring users to bring their own SPL token.
+    pub fn mint_mock_tokens(ctx: Context<MintMockTokens>, amount: u64) -> Result<()> {
+        instructions::mint_mock_tokens::handler(ctx, amount)
+    }
+
     // ── create_stream (Arya — Week 4 implementation) ─────────────────────────
     /// Locks tokens in a PDA-owned escrow and writes the vesting schedule.
     #[allow(clippy::too_many_arguments)]

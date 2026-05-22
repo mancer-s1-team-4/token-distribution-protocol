@@ -67,4 +67,8 @@ pub enum VestingError {
 
     #[msg("invalid stream type — must be 0 (Linear), 1 (Cliff+Linear), or 2 (Milestone)")]
     InvalidStreamType,
+
+    // ── mock token faucet ───────────────────────────────────────────────────
+    #[msg("mock token mint amount is too large")]
+    MockTokenMintTooLarge,
 }

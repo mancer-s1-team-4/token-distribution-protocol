@@ -18,6 +18,7 @@ import idl from "./idl/token_distribution_protocol.json";
 export const PROGRAM_ID = new PublicKey(
   process.env.NEXT_PUBLIC_TDP_PROGRAM_ID ?? idl.address
 );
+export const MOCK_TOKEN_MINT_AMOUNT = 10_000;
 
 export type StreamType = 0 | 1 | 2;
 
@@ -90,6 +91,13 @@ export function getEscrowPda(streamData: PublicKey) {
   )[0];
 }
 
+export function getMockMintPda() {
+  return PublicKey.findProgramAddressSync(
+    [new TextEncoder().encode("mock_mint")],
+    PROGRAM_ID
+  )[0];
+}
+
 export function getProgram(connection: Connection, wallet: WalletContextState) {
   const provider = new anchor.AnchorProvider(
     connection,
@@ -154,6 +162,37 @@ export async function createStreamTx(
       systemProgram: SystemProgram.programId,
     } as never)
     .rpc();
+}
+
+export async function mintMockTokensTx(
+  connection: Connection,
+  wallet: WalletContextState,
+  amount = MOCK_TOKEN_MINT_AMOUNT
+) {
+  if (!wallet.publicKey) {
+    throw new Error("Hubungkan wallet terlebih dahulu.");
+  }
+
+  const program = getProgram(connection, wallet);
+  const mockMint = getMockMintPda();
+  const minterTokenAccount = getAssociatedTokenAddressSync(
+    mockMint,
+    wallet.publicKey
+  );
+
+  const signature = await program.methods
+    .mintMockTokens(new anchor.BN(amount))
+    .accounts({
+      minter: wallet.publicKey,
+      mockMint,
+      minterTokenAccount,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    } as never)
+    .rpc();
+
+  return { signature, mockMint };
 }
 
 export async function fetchWalletStreams(

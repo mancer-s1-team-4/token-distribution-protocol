@@ -5,6 +5,8 @@
   "scripts": {
     "build": "anchor build",
     "deploy:devnet": "bash scripts/deploy-devnet.sh",
+    "redeploy:devnet": "bash scripts/redeploy-devnet.sh",
+    "upgrade:devnet": "bash scripts/upgrade-devnet.sh",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
   },

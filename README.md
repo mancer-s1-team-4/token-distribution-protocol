@@ -187,12 +187,24 @@ rtk anchor test --skip-local-validator
 
 ## Deploy to devnet
 
-Use the manual deployment script. It uses the active Solana CLI wallet unless `ANCHOR_WALLET` is set.
+Use the manual deployment script. It uses `contracts/mancer-deployer.json` unless `ANCHOR_WALLET` is set.
 
 ```bash
 cd contracts
 rtk pnpm run deploy:devnet
 ```
+
+For an existing devnet program, use one of these:
+
+```bash
+cd contracts
+rtk pnpm run upgrade:devnet
+rtk pnpm run redeploy:devnet
+```
+
+Both commands keep the same program ID. `upgrade:devnet` deploys the built `.so`
+with `solana program deploy`; `redeploy:devnet` uses `anchor deploy`. The scripts
+also sync the generated Anchor IDL into `frontend/lib/idl/token_distribution_protocol.json`.
 
 To deploy with the dedicated Mancer deploy wallet without changing your global Solana config:
 
@@ -216,7 +228,8 @@ The deploy script runs:
 2. `solana balance`
 3. `anchor build`
 4. `anchor deploy --provider.cluster devnet`
-5. `solana program show <PROGRAM_ID>`
+5. `bash scripts/sync-idl-to-frontend.sh`
+6. `solana program show <PROGRAM_ID>`
 
 ## Setup frontend
 

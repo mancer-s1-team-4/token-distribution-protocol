@@ -669,6 +669,169 @@
       "args": []
     },
     {
+      "name": "mint_mock_tokens",
+      "docs": [
+        "Mints demo-only mock tokens to the caller so the website can be tested",
+        "without requiring users to bring their own SPL token."
+      ],
+      "discriminator": [
+        29,
+        118,
+        193,
+        185,
+        82,
+        176,
+        203,
+        254
+      ],
+      "accounts": [
+        {
+          "name": "minter",
+          "docs": [
+            "Wallet requesting test tokens. Pays rent if the mint or ATA does not exist yet."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "mock_mint",
+          "docs": [
+            "Program-owned mock token mint used only for demos and vesting tests."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  111,
+                  99,
+                  107,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "minter_token_account",
+          "docs": [
+            "Minter ATA for the mock mint. Created automatically on first mint."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "minter"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mock_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
       "name": "verify_milestone",
       "docs": [
         "Designated verifier marks a milestone as complete, unlocking its tokens",
@@ -1088,6 +1251,11 @@
       "code": 6018,
       "name": "InvalidStreamType",
       "msg": "invalid stream type — must be 0 (Linear), 1 (Cliff+Linear), or 2 (Milestone)"
+    },
+    {
+      "code": 6019,
+      "name": "MockTokenMintTooLarge",
+      "msg": "mock token mint amount is too large"
     }
   ],
   "types": [
