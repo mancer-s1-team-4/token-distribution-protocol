@@ -59,8 +59,11 @@ export default function StreamsPage() {
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-8">
       <header className="mb-8 flex flex-col gap-4 border-b border-[#3ABEF9]/35 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <Link href="/" className="text-sm font-medium text-[#3572EF]">
-            Vestra
+          <Link
+            href="/"
+            className="inline-flex min-h-10 items-center rounded-md text-sm font-semibold text-[#3572EF] transition hover:text-[#050C9C] focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2"
+          >
+            Back to landing
           </Link>
           <h1 className="mt-3 text-3xl font-bold text-[#050C9C]">Streams</h1>
           <p className="mt-1 text-sm text-[#050C9C]/70">
@@ -70,7 +73,7 @@ export default function StreamsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link
             href="/streams/create"
-            className="rounded-md bg-[#050C9C] px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-[#3572EF]"
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-[#050C9C] px-4 text-center text-sm font-semibold text-white transition hover:bg-[#3572EF] focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2"
           >
             Create stream
           </Link>
@@ -89,7 +92,7 @@ export default function StreamsPage() {
         <button
           onClick={() => void loadStreams()}
           disabled={!wallet.connected || isLoading}
-          className="rounded-md border border-[#3ABEF9] px-4 py-2 text-sm font-semibold text-[#050C9C] transition hover:bg-[#A7E6FF]/30 disabled:cursor-not-allowed disabled:text-[#050C9C]/35"
+          className="min-h-10 rounded-md border border-[#3ABEF9] px-4 text-sm font-semibold text-[#050C9C] transition hover:bg-[#A7E6FF]/30 focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-[#050C9C]/35"
         >
           Refresh
         </button>
@@ -152,7 +155,7 @@ export default function StreamsPage() {
                       void runAction(() => withdrawTx(connection, wallet, stream))
                     }
                     disabled={!isRecipient || stream.account.isCancelled}
-                    className="rounded-md bg-[#050C9C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3572EF] disabled:cursor-not-allowed disabled:bg-[#A7E6FF]"
+                    className="min-h-10 rounded-md bg-[#050C9C] px-4 text-sm font-semibold text-white transition hover:bg-[#3572EF] focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-[#A7E6FF]"
                   >
                     Withdraw
                   </button>
@@ -165,7 +168,7 @@ export default function StreamsPage() {
                       stream.account.isCancelled ||
                       !stream.account.isCancelable
                     }
-                    className="rounded-md border border-[#3ABEF9] px-4 py-2 text-sm font-semibold text-[#050C9C] transition hover:bg-[#A7E6FF]/30 disabled:cursor-not-allowed disabled:text-[#050C9C]/35"
+                    className="min-h-10 rounded-md border border-[#3ABEF9] px-4 text-sm font-semibold text-[#050C9C] transition hover:bg-[#A7E6FF]/30 focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-[#050C9C]/35"
                   >
                     Cancel
                   </button>
@@ -201,7 +204,7 @@ export default function StreamsPage() {
                             milestone.isVerified ||
                             !wallet.publicKey?.equals(milestone.verifier)
                           }
-                          className="rounded-md border border-[#3ABEF9] px-3 py-2 text-sm font-semibold text-[#050C9C] transition hover:bg-white disabled:cursor-not-allowed disabled:text-[#050C9C]/35"
+                          className="min-h-10 rounded-md border border-[#3ABEF9] px-3 text-sm font-semibold text-[#050C9C] transition hover:bg-white focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-[#050C9C]/35"
                         >
                           Verify
                         </button>
