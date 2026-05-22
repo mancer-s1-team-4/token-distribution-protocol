@@ -23,6 +23,45 @@ export default function StreamsPage() {
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  useEffect(() => {
+    let isCurrent = true;
+
+    async function fetchStreams() {
+      await Promise.resolve();
+      if (!isCurrent) {
+        return;
+      }
+
+      if (!wallet.connected) {
+        setStreams([]);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const walletStreams = await fetchWalletStreams(connection, wallet);
+        if (isCurrent) {
+          setStreams(walletStreams);
+          setStatus("");
+        }
+      } catch (error) {
+        if (isCurrent) {
+          setStatus(error instanceof Error ? error.message : "Could not load streams.");
+        }
+      } finally {
+        if (isCurrent) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void fetchStreams();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [connection, wallet]);
+
   const loadStreams = useCallback(async () => {
     if (!wallet.connected) {
       setStreams([]);
@@ -39,10 +78,6 @@ export default function StreamsPage() {
       setIsLoading(false);
     }
   }, [connection, wallet]);
-
-  useEffect(() => {
-    void loadStreams();
-  }, [loadStreams]);
 
   async function runAction(action: () => Promise<string>) {
     setStatus("Waiting for wallet approval...");
