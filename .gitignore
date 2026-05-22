@@ -12,9 +12,6 @@ CLAUDE.md
 GEMINI.md
 skills-lock.json
 
-# GitHub automation generated outside the product code
-.github/
-
 # Local environment
 .env
 .env.*

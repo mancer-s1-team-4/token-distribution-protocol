@@ -1,0 +1,112 @@
+name: contracts-ci
+
+on:
+  push:
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contracts-ci.yml"
+  pull_request:
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contracts-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: contracts-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: pkg-config libudev-dev libssl-dev
+          version: 1.0
+
+      - name: Cache Solana CLI
+        id: cache-solana
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/solana
+          key: solana-3.1.11-linux
+
+      - name: Install Solana CLI
+        if: steps.cache-solana.outputs.cache-hit != 'true'
+        run: sh -c "$(curl -sSfL https://release.anza.xyz/v3.1.11/install)"
+
+      - name: Add Solana to PATH
+        run: echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Install Rust 1.92.0
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.92.0
+
+      - name: Cache Anchor CLI
+        id: cache-anchor
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/bin/anchor
+          key: anchor-0.32.1-linux
+
+      - name: Install Anchor CLI
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/.local/bin
+          curl -L https://github.com/solana-foundation/anchor/releases/download/v0.32.1/anchor-0.32.1-x86_64-unknown-linux-gnu \
+            -o ~/.local/bin/anchor
+          chmod +x ~/.local/bin/anchor
+
+      - name: Add Anchor to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "contracts -> target"
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-linux-${{ hashFiles('contracts/pnpm-lock.yaml') }}
+
+      - name: Install Node dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Generate Solana keypair
+        run: |
+          mkdir -p ~/.config/solana
+          solana-keygen new --no-bip39-passphrase --silent --outfile ~/.config/solana/id.json
+          solana config set --url localhost
+
+      - name: Sync program keypair and declare_id
+        run: anchor keys sync
+
+      - name: Build program
+        env:
+          CARGO_INCREMENTAL: "0"
+        run: anchor build --provider.cluster localnet
+
+      - name: Run anchor tests
+        run: anchor test --skip-build --provider.cluster localnet
