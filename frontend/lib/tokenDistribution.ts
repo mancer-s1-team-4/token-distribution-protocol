@@ -61,6 +61,12 @@ export type CreateStreamInput = {
   isCancelable: boolean;
 };
 
+export type MockTokenBalance = {
+  mockMint: PublicKey;
+  tokenAccount: PublicKey;
+  amount: string;
+};
+
 const STREAM_DATA_CREATOR_OFFSET = 8;
 const STREAM_DATA_RECIPIENT_OFFSET = STREAM_DATA_CREATOR_OFFSET + 32;
 
@@ -96,6 +102,10 @@ export function getMockMintPda() {
     [new TextEncoder().encode("mock_mint")],
     PROGRAM_ID
   )[0];
+}
+
+export function getMockTokenAccount(owner: PublicKey) {
+  return getAssociatedTokenAddressSync(getMockMintPda(), owner);
 }
 
 export function getProgram(connection: Connection, wallet: WalletContextState) {
@@ -193,6 +203,30 @@ export async function mintMockTokensTx(
     .rpc();
 
   return { signature, mockMint };
+}
+
+export async function fetchMockTokenBalance(
+  connection: Connection,
+  owner: PublicKey
+): Promise<MockTokenBalance> {
+  const mockMint = getMockMintPda();
+  const tokenAccount = getMockTokenAccount(owner);
+
+  try {
+    const balance = await connection.getTokenAccountBalance(tokenAccount);
+
+    return {
+      mockMint,
+      tokenAccount,
+      amount: balance.value.amount,
+    };
+  } catch {
+    return {
+      mockMint,
+      tokenAccount,
+      amount: "0",
+    };
+  }
 }
 
 export async function fetchWalletStreams(

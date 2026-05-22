@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 import {
   MOCK_TOKEN_MINT_AMOUNT,
   createStreamTx,
+  fetchMockTokenBalance,
   mintMockTokensTx,
+  type MockTokenBalance,
   type CreateStreamInput,
   type StreamType,
 } from "@/lib/tokenDistribution";
@@ -49,6 +51,8 @@ export default function CreateStreamPage() {
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMintingMock, setIsMintingMock] = useState(false);
+  const [isLoadingMockBalance, setIsLoadingMockBalance] = useState(false);
+  const [mockBalance, setMockBalance] = useState<MockTokenBalance | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
 
   const scheduleLabels: Record<number, string> = {
@@ -63,6 +67,24 @@ export default function CreateStreamPage() {
     setIsError(false);
     setIsReviewing(true);
   }
+
+  const loadMockBalance = useCallback(async () => {
+    if (!wallet.publicKey) {
+      setMockBalance(null);
+      return;
+    }
+
+    setIsLoadingMockBalance(true);
+    try {
+      setMockBalance(await fetchMockTokenBalance(connection, wallet.publicKey));
+    } finally {
+      setIsLoadingMockBalance(false);
+    }
+  }, [connection, wallet.publicKey]);
+
+  useEffect(() => {
+    void loadMockBalance();
+  }, [loadMockBalance]);
 
   async function confirmAndSubmit() {
     setIsSubmitting(true);
@@ -101,6 +123,7 @@ export default function CreateStreamPage() {
         `Minted ${MOCK_TOKEN_MINT_AMOUNT} mock tokens. Mock mint: ${mockMint.toBase58()}. Transaction: ${signature}`
       );
       setIsError(false);
+      await loadMockBalance();
     } catch (error) {
       const raw = error instanceof Error ? error.message : "Transaction failed.";
       setStatus(friendlyError(raw));
@@ -248,6 +271,24 @@ export default function CreateStreamPage() {
               <p className="mt-1 text-xs text-muted-foreground">
                 Mint demo tokens to your wallet and use them for this vesting agreement.
               </p>
+              <dl className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                <div>
+                  <dt>Mock balance</dt>
+                  <dd className="mt-0.5 font-mono text-sm font-semibold text-foreground">
+                    {!wallet.connected
+                      ? "-"
+                      : isLoadingMockBalance
+                        ? "Loading..."
+                        : `${mockBalance?.amount ?? "0"} tokens`}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Mock mint</dt>
+                  <dd className="mt-0.5 break-all font-mono text-[11px] text-foreground">
+                    {mockBalance?.mockMint.toBase58() ?? "-"}
+                  </dd>
+                </div>
+              </dl>
             </div>
             <button
               type="button"
