@@ -46,9 +46,20 @@ export default function CreateStreamPage() {
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-8">
       <header className="mb-8 flex flex-col gap-4 border-b border-[#3ABEF9]/35 pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <Link href="/streams" className="text-sm font-medium text-[#3572EF]">
-            Back to streams
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/"
+              className="inline-flex min-h-10 items-center rounded-md text-sm font-semibold text-[#3572EF] transition hover:text-[#050C9C] focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2"
+            >
+              Back to landing
+            </Link>
+            <Link
+              href="/streams"
+              className="inline-flex min-h-10 items-center rounded-md text-sm font-semibold text-[#3572EF] transition hover:text-[#050C9C] focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2"
+            >
+              Back to streams
+            </Link>
+          </div>
           <h1 className="mt-3 text-3xl font-bold text-[#050C9C]">
             Create stream
           </h1>
