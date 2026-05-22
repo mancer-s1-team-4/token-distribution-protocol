@@ -17,6 +17,9 @@ skills-lock.json
 .env.*
 !.env.example
 
+# Deployment keypair — never commit private keys
+mancer-deployment.json
+
 # OS/editor noise
 .DS_Store
 *.swp

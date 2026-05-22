@@ -19,24 +19,60 @@ const initialForm: CreateStreamInput = {
   isCancelable: true,
 };
 
+function friendlyError(raw: string): string {
+  if (/invalid public key/i.test(raw)) {
+    return "One of the addresses you entered is not a valid wallet address. Check the Recipient wallet and Token contract address fields.";
+  }
+  if (/user rejected/i.test(raw) || /rejected/i.test(raw)) {
+    return "You cancelled the transaction in your wallet. No tokens were moved.";
+  }
+  if (/insufficient/i.test(raw)) {
+    return "Your wallet does not have enough tokens to fund this agreement.";
+  }
+  if (/Transaction failed/i.test(raw)) {
+    return "The transaction did not go through. Check your inputs and try again.";
+  }
+  return raw;
+}
+
 export default function CreateStreamPage() {
   const wallet = useWallet();
   const { connection } = useConnection();
   const [form, setForm] = useState<CreateStreamInput>(initialForm);
   const [status, setStatus] = useState("");
+  const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  const scheduleLabels: Record<number, string> = {
+    0: "Even payouts over time",
+    1: "Locked period, then even payouts",
+    2: "Release when goals are completed",
+  };
+
+  function handleReview(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setStatus("");
+    setIsError(false);
+    setIsReviewing(true);
+  }
+
+  async function confirmAndSubmit() {
     setIsSubmitting(true);
+    setIsError(false);
     setStatus("Preparing transaction...");
 
     try {
       const signature = await createStreamTx(connection, wallet, form);
-      setStatus(`Stream created. Tx: ${signature}`);
+      setStatus(`Agreement created. Transaction: ${signature}`);
+      setIsError(false);
       setForm({ ...initialForm, streamId: Date.now().toString() });
+      setIsReviewing(false);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Transaction failed.");
+      const raw = error instanceof Error ? error.message : "Transaction failed.";
+      setStatus(friendlyError(raw));
+      setIsError(true);
+      setIsReviewing(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -44,180 +80,308 @@ export default function CreateStreamPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-8">
-      <header className="mb-8 flex flex-col gap-4 border-b border-[#3ABEF9]/35 pb-5 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-8 flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-4">
             <Link
               href="/"
-              className="inline-flex min-h-10 items-center rounded-md text-sm font-semibold text-[#3572EF] transition hover:text-[#050C9C] focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2"
+              className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-primary transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              Back to landing
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+              Back to Home
             </Link>
             <Link
               href="/streams"
-              className="inline-flex min-h-10 items-center rounded-md text-sm font-semibold text-[#3572EF] transition hover:text-[#050C9C] focus-visible:ring-2 focus-visible:ring-[#3572EF] focus-visible:ring-offset-2"
+              className="inline-flex min-h-10 items-center gap-1 rounded-md text-sm font-semibold text-primary transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              Back to streams
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+              Back to Agreements
             </Link>
           </div>
-          <h1 className="mt-3 text-3xl font-bold text-[#050C9C]">
-            Create stream
+          <h1 className="mt-3 text-3xl font-bold text-foreground">
+            New distribution agreement
           </h1>
-          <p className="mt-1 text-sm text-[#050C9C]/70">
-            Lock SPL tokens and define when the recipient can withdraw.
+          <p className="mt-1 text-sm text-muted-foreground">
+            Set up automated token payments. Choose who receives them, how much, and when.
           </p>
         </div>
         <WalletMultiButton />
       </header>
 
-      <form
-        onSubmit={submit}
-        className="grid gap-5 rounded-lg border border-[#3ABEF9]/45 bg-white p-5 shadow-sm"
-      >
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Recipient wallet">
-            <input
-              required
-              value={form.recipient}
-              onChange={(event) =>
-                setForm((value) => ({ ...value, recipient: event.target.value }))
-              }
-              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
-              placeholder="Recipient public key"
-            />
-          </Field>
+      {status ? (
+        <div
+          role="alert"
+          className={`mb-5 flex gap-3 rounded-md border px-4 py-3 text-sm ${
+            isError
+              ? "border-destructive/50 bg-destructive/10 text-destructive"
+              : "border-border bg-secondary/70 text-foreground"
+          }`}
+        >
+          {isError ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="mt-0.5 shrink-0"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" x2="12" y1="8" y2="12" />
+              <line x1="12" x2="12.01" y1="16" y2="16" />
+            </svg>
+          ) : null}
+          <p>{status}</p>
+        </div>
+      ) : null}
 
-          <Field label="Token mint">
-            <input
-              required
-              value={form.mint}
-              onChange={(event) =>
-                setForm((value) => ({ ...value, mint: event.target.value }))
-              }
-              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
-              placeholder="SPL mint address"
-            />
-          </Field>
+      {isReviewing ? (
+        <div className="grid gap-5 rounded-lg border border-border bg-card p-5 shadow-sm">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Review before sending</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Check the details below. Once confirmed, this agreement will be recorded on the blockchain and cannot be undone without cancellation.
+            </p>
+          </div>
 
-          <Field label="Amount">
-            <input
-              required
-              inputMode="numeric"
-              value={form.amount}
-              onChange={(event) =>
-                setForm((value) => ({ ...value, amount: event.target.value }))
-              }
-              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
-              placeholder="Raw token units"
-            />
-          </Field>
+          <dl className="grid gap-4 rounded-md border border-border bg-background p-4 text-sm sm:grid-cols-2">
+            <ReviewRow label="Recipient wallet" value={form.recipient} mono />
+            <ReviewRow label="Token contract" value={form.mint} mono />
+            <ReviewRow label="Amount" value={`${form.amount} tokens`} />
+            <ReviewRow label="Schedule" value={scheduleLabels[form.streamType] ?? ""} />
+            <ReviewRow label="Start" value={form.startDate} />
+            {form.cliffDate ? <ReviewRow label="Lock until" value={form.cliffDate} /> : null}
+            <ReviewRow label="End" value={form.endDate} />
+            <ReviewRow label="Cancellable" value={form.isCancelable ? "Yes" : "No"} />
+          </dl>
 
-          <Field label="Stream ID">
-            <input
-              required
-              inputMode="numeric"
-              value={form.streamId}
-              onChange={(event) =>
-                setForm((value) => ({ ...value, streamId: event.target.value }))
-              }
-              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
-            />
-          </Field>
+          <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setIsReviewing(false)}
+              disabled={isSubmitting}
+              className="min-h-10 rounded-md border border-border px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
+            >
+              Back to edit
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmAndSubmit()}
+              disabled={!wallet.connected || isSubmitting}
+              className="min-h-10 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-foreground/35"
+            >
+              {isSubmitting ? "Sending..." : "Confirm and send"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form
+          onSubmit={handleReview}
+          className="grid gap-5 rounded-lg border border-border bg-card p-5 shadow-sm"
+        >
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Recipient wallet" hint="The wallet address that will receive the tokens.">
+              <input
+                required
+                value={form.recipient}
+                onChange={(event) =>
+                  setForm((value) => ({ ...value, recipient: event.target.value }))
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="Recipient's wallet address"
+                autoComplete="off"
+              />
+            </Field>
 
-          <Field label="Start">
-            <input
-              required
-              type="datetime-local"
-              value={form.startDate}
-              onChange={(event) =>
-                setForm((value) => ({ ...value, startDate: event.target.value }))
-              }
-              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
-            />
-          </Field>
+            <Field label="Token contract address" hint="The contract address of the token you want to distribute.">
+              <input
+                required
+                value={form.mint}
+                onChange={(event) =>
+                  setForm((value) => ({ ...value, mint: event.target.value }))
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="Token contract address"
+                autoComplete="off"
+              />
+            </Field>
 
-          <Field label="Cliff">
-            <input
-              type="datetime-local"
-              value={form.cliffDate}
-              onChange={(event) =>
-                setForm((value) => ({ ...value, cliffDate: event.target.value }))
-              }
-              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
-            />
-          </Field>
+            <Field label="Amount" hint="Total number of tokens to lock into this agreement.">
+              <input
+                required
+                inputMode="numeric"
+                value={form.amount}
+                onChange={(event) =>
+                  setForm((value) => ({ ...value, amount: event.target.value }))
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="Number of tokens (e.g. 1000)"
+              />
+            </Field>
 
-          <Field label="End">
-            <input
-              required
-              type="datetime-local"
-              value={form.endDate}
-              onChange={(event) =>
-                setForm((value) => ({ ...value, endDate: event.target.value }))
-              }
-              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
-            />
-          </Field>
+            <Field label="Agreement ID" hint="A unique number to identify this agreement. Auto-generated.">
+              <input
+                required
+                inputMode="numeric"
+                value={form.streamId}
+                onChange={(event) =>
+                  setForm((value) => ({ ...value, streamId: event.target.value }))
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </Field>
 
-          <Field label="Schedule">
-            <select
-              value={form.streamType}
+            <Field label="Start date" hint="When the payout schedule begins.">
+              <input
+                required
+                type="datetime-local"
+                value={form.startDate}
+                onChange={(event) =>
+                  setForm((value) => ({ ...value, startDate: event.target.value }))
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </Field>
+
+            <Field label="Lock until (optional)" hint="Tokens are locked and cannot be claimed before this date. Leave blank for no lock period.">
+              <input
+                type="datetime-local"
+                value={form.cliffDate}
+                onChange={(event) =>
+                  setForm((value) => ({ ...value, cliffDate: event.target.value }))
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </Field>
+
+            <Field label="End date" hint="When the last payout occurs.">
+              <input
+                required
+                type="datetime-local"
+                value={form.endDate}
+                onChange={(event) =>
+                  setForm((value) => ({ ...value, endDate: event.target.value }))
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </Field>
+
+            <Field label="Payout schedule" hint="How tokens are released over time.">
+              <select
+                value={form.streamType}
+                onChange={(event) =>
+                  setForm((value) => ({
+                    ...value,
+                    streamType: Number(event.target.value) as StreamType,
+                  }))
+                }
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option value={0}>Even payouts over time</option>
+                <option value={1}>Locked period, then even payouts</option>
+                <option value={2}>Release when goals are completed</option>
+              </select>
+            </Field>
+          </div>
+
+          <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground/80">
+            <input
+              type="checkbox"
+              checked={form.isCancelable}
               onChange={(event) =>
                 setForm((value) => ({
                   ...value,
-                  streamType: Number(event.target.value) as StreamType,
+                  isCancelable: event.target.checked,
                 }))
               }
-              className="w-full rounded-md border border-[#3ABEF9]/60 px-3 py-2 text-sm text-[#050C9C]"
+              className="mt-0.5 h-4 w-4 cursor-pointer"
+            />
+            <span>
+              Allow cancellation of unreleased tokens
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                If enabled, you can cancel this agreement and reclaim any tokens that have not yet been claimed.
+              </span>
+            </span>
+          </label>
+
+          <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              {!wallet.connected ? "Connect your wallet to continue." : ""}
+            </p>
+            <button
+              type="submit"
+              disabled={!wallet.connected}
+              className="min-h-10 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/80 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-foreground/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <option value={0}>Linear</option>
-              <option value={1}>Cliff + linear</option>
-              <option value={2}>Milestone</option>
-            </select>
-          </Field>
-        </div>
-
-        <label className="flex items-center gap-3 text-sm text-[#050C9C]/80">
-          <input
-            type="checkbox"
-            checked={form.isCancelable}
-            onChange={(event) =>
-              setForm((value) => ({
-                ...value,
-                isCancelable: event.target.checked,
-              }))
-            }
-            className="h-4 w-4"
-          />
-          Creator can cancel unvested tokens
-        </label>
-
-        <div className="flex flex-col gap-3 border-t border-[#A7E6FF] pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="min-h-5 text-sm text-[#050C9C]/70">{status}</p>
-          <button
-            type="submit"
-            disabled={!wallet.connected || isSubmitting}
-            className="rounded-md bg-[#050C9C] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#3572EF] disabled:cursor-not-allowed disabled:bg-[#A7E6FF]"
-          >
-            {isSubmitting ? "Submitting..." : "Create stream"}
-          </button>
-        </div>
-      </form>
+              Review agreement
+            </button>
+          </div>
+        </form>
+      )}
     </main>
   );
 }
 
 function Field({
   label,
+  hint,
   children,
 }: {
   label: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-medium text-[#050C9C]/80">
-      {label}
+    <div className="grid gap-1.5">
+      <label className="text-sm font-medium text-foreground/80">
+        {label}
+      </label>
       {children}
-    </label>
+      {hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function ReviewRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dd className={`mt-1 break-all text-sm font-medium text-foreground${mono ? " font-mono" : ""}`}>
+        {value}
+      </dd>
+    </div>
   );
 }

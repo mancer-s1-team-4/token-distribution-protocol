@@ -5,12 +5,12 @@ import Script from "next/script";
 import "./globals.css";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} font-sans h-full antialiased`}
     >
       <head>
         {gaMeasurementId ? (
@@ -50,7 +50,7 @@ export default function RootLayout({
           </>
         ) : null}
       </head>
-      <body className="min-h-full bg-[#A7E6FF]/20 text-[#050C9C]">
+      <body className="min-h-full bg-background text-foreground">
         <WalletProvider>{children}</WalletProvider>
       </body>
     </html>
