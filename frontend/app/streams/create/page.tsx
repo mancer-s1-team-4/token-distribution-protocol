@@ -30,6 +30,14 @@ const initialForm: CreateStreamInput = {
 
 const MOCK_MINT = getMockMintPda();
 
+function shortenSignature(signature: string): string {
+  if (signature.length <= 20) {
+    return signature;
+  }
+
+  return `${signature.slice(0, 8)}...${signature.slice(-8)}`;
+}
+
 function friendlyError(raw: string): string {
   if (/invalid public key/i.test(raw)) {
     return "One of the addresses you entered is not a valid wallet address. Check the Recipient wallet and Token contract address fields.";
@@ -54,6 +62,8 @@ export default function CreateStreamPage() {
   const { connection } = useConnection();
   const [form, setForm] = useState<CreateStreamInput>(initialForm);
   const [status, setStatus] = useState("");
+  const [statusTxSignature, setStatusTxSignature] = useState("");
+  const [hasCopiedSignature, setHasCopiedSignature] = useState(false);
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMintingMock, setIsMintingMock] = useState(false);
@@ -70,6 +80,8 @@ export default function CreateStreamPage() {
   function handleReview(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("");
+    setStatusTxSignature("");
+    setHasCopiedSignature(false);
     setIsError(false);
     setIsReviewing(true);
   }
@@ -93,23 +105,29 @@ export default function CreateStreamPage() {
   }, [connection, wallet.publicKey]);
 
   useEffect(() => {
-    void loadMockBalance();
+    const timeoutId = window.setTimeout(() => void loadMockBalance(), 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [loadMockBalance]);
 
   async function confirmAndSubmit() {
     setIsSubmitting(true);
     setIsError(false);
+    setStatusTxSignature("");
+    setHasCopiedSignature(false);
     setStatus("Preparing transaction...");
 
     try {
       const signature = await createStreamTx(connection, wallet, form);
-      setStatus(`Agreement created. Transaction: ${signature}`);
+      setStatus("Agreement created.");
+      setStatusTxSignature(signature);
       setIsError(false);
       setForm({ ...initialForm, streamId: Date.now().toString() });
       setIsReviewing(false);
     } catch (error) {
       const raw = error instanceof Error ? error.message : "Transaction failed.";
       setStatus(friendlyError(raw));
+      setStatusTxSignature("");
       setIsError(true);
       setIsReviewing(false);
     } finally {
@@ -120,6 +138,8 @@ export default function CreateStreamPage() {
   async function handleMintMockTokens() {
     setIsMintingMock(true);
     setIsError(false);
+    setStatusTxSignature("");
+    setHasCopiedSignature(false);
     setStatus("Minting mock tokens...");
 
     try {
@@ -129,18 +149,28 @@ export default function CreateStreamPage() {
         mint: mockMint.toBase58(),
         amount: value.amount || "1000",
       }));
-      setStatus(
-        `Minted ${MOCK_TOKEN_MINT_AMOUNT} mock tokens. Mock mint: ${mockMint.toBase58()}. Transaction: ${signature}`
-      );
+      setStatus(`Minted ${MOCK_TOKEN_MINT_AMOUNT} mock tokens. Mock mint filled in below.`);
+      setStatusTxSignature(signature);
       setIsError(false);
       await loadMockBalance();
     } catch (error) {
       const raw = error instanceof Error ? error.message : "Transaction failed.";
       setStatus(friendlyError(raw));
+      setStatusTxSignature("");
       setIsError(true);
     } finally {
       setIsMintingMock(false);
     }
+  }
+
+  async function copyStatusTxSignature() {
+    if (!statusTxSignature) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(statusTxSignature);
+    setHasCopiedSignature(true);
+    window.setTimeout(() => setHasCopiedSignature(false), 1800);
   }
 
   return (
@@ -202,7 +232,7 @@ export default function CreateStreamPage() {
       {status ? (
         <div
           role="alert"
-          className={`mb-5 flex gap-3 rounded-md border px-4 py-3 text-sm ${
+          className={`mb-5 flex min-w-0 gap-3 rounded-md border px-4 py-3 text-sm ${
             isError
               ? "border-destructive/50 bg-destructive/10 text-destructive"
               : "border-border bg-secondary/70 text-foreground"
@@ -227,7 +257,24 @@ export default function CreateStreamPage() {
               <line x1="12" x2="12.01" y1="16" y2="16" />
             </svg>
           ) : null}
-          <p>{status}</p>
+          <div className="min-w-0 flex-1">
+            <p>{status}</p>
+            {statusTxSignature ? (
+              <div className="mt-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+                <p className="min-w-0 truncate rounded-md border border-border bg-background px-2 py-1 font-mono text-xs text-muted-foreground">
+                  <span className="font-sans font-medium text-foreground">Tx: </span>
+                  {shortenSignature(statusTxSignature)}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void copyStatusTxSignature()}
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground transition-colors hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  {hasCopiedSignature ? "Copied" : "Copy tx"}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
