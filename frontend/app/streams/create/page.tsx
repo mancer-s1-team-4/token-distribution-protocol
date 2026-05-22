@@ -9,6 +9,7 @@ import {
   MOCK_TOKEN_MINT_AMOUNT,
   createStreamTx,
   fetchMockTokenBalance,
+  getMockMintPda,
   mintMockTokensTx,
   type MockTokenBalance,
   type CreateStreamInput,
@@ -27,6 +28,8 @@ const initialForm: CreateStreamInput = {
   isCancelable: true,
 };
 
+const MOCK_MINT = getMockMintPda();
+
 function friendlyError(raw: string): string {
   if (/invalid public key/i.test(raw)) {
     return "One of the addresses you entered is not a valid wallet address. Check the Recipient wallet and Token contract address fields.";
@@ -36,6 +39,9 @@ function friendlyError(raw: string): string {
   }
   if (/insufficient/i.test(raw)) {
     return "Your wallet does not have enough tokens to fund this agreement.";
+  }
+  if (/fallback/i.test(raw) || /instruction.*not.*found/i.test(raw)) {
+    return "Mint mock token is not available on the deployed program yet. Run pnpm run upgrade:devnet from contracts, then refresh this page.";
   }
   if (/Transaction failed/i.test(raw)) {
     return "The transaction did not go through. Check your inputs and try again.";
@@ -70,7 +76,11 @@ export default function CreateStreamPage() {
 
   const loadMockBalance = useCallback(async () => {
     if (!wallet.publicKey) {
-      setMockBalance(null);
+      setMockBalance({
+        mockMint: MOCK_MINT,
+        tokenAccount: MOCK_MINT,
+        amount: "0",
+      });
       return;
     }
 
@@ -276,7 +286,7 @@ export default function CreateStreamPage() {
                   <dt>Mock balance</dt>
                   <dd className="mt-0.5 font-mono text-sm font-semibold text-foreground">
                     {!wallet.connected
-                      ? "-"
+                      ? "Connect wallet"
                       : isLoadingMockBalance
                         ? "Loading..."
                         : `${mockBalance?.amount ?? "0"} tokens`}
@@ -285,19 +295,37 @@ export default function CreateStreamPage() {
                 <div>
                   <dt>Mock mint</dt>
                   <dd className="mt-0.5 break-all font-mono text-[11px] text-foreground">
-                    {mockBalance?.mockMint.toBase58() ?? "-"}
+                    {mockBalance?.mockMint.toBase58() ?? MOCK_MINT.toBase58()}
+                  </dd>
+                </div>
+                <div className="sm:col-span-2">
+                  <dt>Token account</dt>
+                  <dd className="mt-0.5 break-all font-mono text-[11px] text-foreground">
+                    {wallet.connected
+                      ? mockBalance?.tokenAccount.toBase58() ?? "Loading..."
+                      : "Connect wallet"}
                   </dd>
                 </div>
               </dl>
             </div>
-            <button
-              type="button"
-              onClick={() => void handleMintMockTokens()}
-              disabled={!wallet.connected || isMintingMock}
-              className="min-h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
-            >
-              {isMintingMock ? "Minting..." : "Mint mock tokens"}
-            </button>
+            <div className="flex flex-col gap-2 sm:min-w-40">
+              <button
+                type="button"
+                onClick={() => void loadMockBalance()}
+                disabled={!wallet.connected || isLoadingMockBalance}
+                className="min-h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
+              >
+                {isLoadingMockBalance ? "Checking..." : "Check balance"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleMintMockTokens()}
+                disabled={!wallet.connected || isMintingMock}
+                className="min-h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
+              >
+                {isMintingMock ? "Minting..." : "Mint mock tokens"}
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
