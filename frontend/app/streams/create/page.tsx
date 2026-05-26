@@ -47,6 +47,12 @@ function friendlyError(raw: string): string {
   if (/user rejected/i.test(raw) || /rejected/i.test(raw)) {
     return "You cancelled the transaction in your wallet. No tokens were moved.";
   }
+  if (/NO_CREATOR_TOKEN_ACCOUNT/i.test(raw) || (/(AccountNotInitialized|3012)/i.test(raw) && /creator_token_account/i.test(raw))) {
+    return "You don't have a token account for this token. You need to hold some of this token in your wallet before you can stream it. If you're testing, use the Devnet testing tools to mint mock tokens first.";
+  }
+  if (/AccountNotInitialized|3012/i.test(raw)) {
+    return "A required account hasn't been set up yet. Make sure the token exists on devnet and you hold a balance of it.";
+  }
   if (/insufficient/i.test(raw)) {
     return "Your wallet does not have enough tokens to fund this agreement.";
   }

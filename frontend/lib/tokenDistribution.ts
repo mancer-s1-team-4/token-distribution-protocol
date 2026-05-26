@@ -150,6 +150,15 @@ export async function createStreamTx(
   const escrowTokenAccount = getEscrowPda(streamData);
   const creatorTokenAccount = getAssociatedTokenAddressSync(mint, creator);
 
+  // Pre-flight: verify the creator's token account exists before sending
+  const creatorTokenAccountInfo = await connection.getAccountInfo(creatorTokenAccount);
+  if (!creatorTokenAccountInfo) {
+    throw new Error(
+      "NO_CREATOR_TOKEN_ACCOUNT: You don't have a token account for this token. " +
+      "Hold some of this token in your wallet first, then try again."
+    );
+  }
+
   return program.methods
     .createStream(
       streamId,

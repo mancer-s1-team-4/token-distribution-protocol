@@ -22,6 +22,7 @@ export function FormTour({ steps, onDone }: FormTourProps) {
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
 
   const current = steps[step];
 
@@ -31,11 +32,28 @@ export function FormTour({ steps, onDone }: FormTourProps) {
       if (!el) return;
       const r = el.getBoundingClientRect();
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-    measure();
+
+    // Instant scroll so the element is in place before we measure
+    const el = document.getElementById(current.fieldId);
+    if (el) {
+      el.scrollIntoView({ behavior: "instant", block: "center" });
+    }
+
+    // Measure after the browser has painted the scrolled position
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = requestAnimationFrame(measure); // double-raf for layout flush
+    });
+
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    window.addEventListener("scroll", measure, { passive: true });
+
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure);
+    };
   }, [current.fieldId]);
 
   function next() {
@@ -50,7 +68,7 @@ export function FormTour({ steps, onDone }: FormTourProps) {
   const tooltipStyle: React.CSSProperties = (() => {
     if (!rect) return { display: "none" };
     const viewH = window.innerHeight;
-    const tooltipH = 160; // approximate
+    const tooltipH = 180;
     const below = rect.top + rect.height + TOOLTIP_OFFSET;
     const above = rect.top - tooltipH - TOOLTIP_OFFSET;
 
@@ -63,7 +81,7 @@ export function FormTour({ steps, onDone }: FormTourProps) {
     return { position: "fixed", top, left, width: 320 };
   })();
 
-  // Highlight ring style
+  // Highlight ring — locked to current element position
   const highlightStyle: React.CSSProperties = rect
     ? {
         position: "fixed",
@@ -76,16 +94,14 @@ export function FormTour({ steps, onDone }: FormTourProps) {
         border: "2px solid var(--color-primary, #3348CC)",
         pointerEvents: "none",
         zIndex: 49,
-        transition: "top 250ms ease, left 250ms ease, width 250ms ease, height 250ms ease",
+        transition: "top 180ms ease, left 180ms ease, width 180ms ease, height 180ms ease",
       }
     : { display: "none" };
 
   return (
     <>
-      {/* Backdrop handled by box-shadow on highlight */}
       <div style={highlightStyle} aria-hidden="true" />
 
-      {/* Tooltip */}
       <div
         ref={tooltipRef}
         style={{ ...tooltipStyle, zIndex: 50 }}
@@ -126,7 +142,7 @@ export function FormTour({ steps, onDone }: FormTourProps) {
             onClick={next}
             className="min-h-8 rounded-md bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/80"
           >
-            {step === steps.length - 1 ? "Got it, let's start" : "Next"}
+            {step === steps.length - 1 ? "Got it, let’s start" : "Next"}
           </button>
         </div>
       </div>
