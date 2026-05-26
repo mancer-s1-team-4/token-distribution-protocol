@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
+import { FormTour, type TourStep } from "@/components/FormTour";
+import { TokenSearch } from "@/components/TokenSearch";
 import {
   MOCK_TOKEN_MINT_AMOUNT,
   createStreamTx,
@@ -70,12 +72,64 @@ export default function CreateStreamPage() {
   const [isLoadingMockBalance, setIsLoadingMockBalance] = useState(false);
   const [mockBalance, setMockBalance] = useState<MockTokenBalance | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
 
   const scheduleLabels: Record<number, string> = {
     0: "Even payouts over time",
     1: "Locked period, then even payouts",
     2: "Release when goals are completed",
   };
+
+  const tourSteps: TourStep[] = [
+    {
+      fieldId: "field-recipient",
+      label: "Recipient wallet",
+      explanation: "The wallet address that will receive the tokens you are streaming.",
+      example: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+    },
+    {
+      fieldId: "field-token",
+      label: "Token",
+      explanation: "Search for the token you want to stream, or paste a custom contract address.",
+      example: "USDC — USD Coin",
+    },
+    {
+      fieldId: "field-amount",
+      label: "Amount",
+      explanation: "Total number of tokens to lock into this agreement. Recipients claim from this pool.",
+      example: "1000",
+    },
+    {
+      fieldId: "field-start",
+      label: "Start date",
+      explanation: "When the payout schedule begins. Recipients cannot claim before this date.",
+      example: "2025-06-01T09:00",
+    },
+    {
+      fieldId: "field-cliff",
+      label: "Lock until (optional)",
+      explanation: "Tokens are locked and cannot be claimed before this date. Leave blank for no lock period.",
+      example: "2025-09-01T09:00",
+    },
+    {
+      fieldId: "field-end",
+      label: "End date",
+      explanation: "When the last payout occurs. All remaining tokens are fully vested by this date.",
+      example: "2026-06-01T09:00",
+    },
+    {
+      fieldId: "field-schedule",
+      label: "Payout schedule",
+      explanation: "How tokens are released — evenly over time, after a lock period, or on milestone completion.",
+      example: "Even payouts over time",
+    },
+    {
+      fieldId: "field-cancelable",
+      label: "Allow cancellation",
+      explanation: "If enabled, you can cancel this agreement later and reclaim unreleased tokens.",
+      example: "Checked — recommended for most agreements",
+    },
+  ];
 
   function handleReview(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -224,10 +278,22 @@ export default function CreateStreamPage() {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Set up automated token payments. Choose who receives them, how much, and when.
+            {" "}
+            <button
+              type="button"
+              onClick={() => setTourActive(true)}
+              className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            >
+              How to use this form?
+            </button>
           </p>
         </div>
         <WalletMultiButton />
       </header>
+
+      {tourActive ? (
+        <FormTour steps={tourSteps} onDone={() => setTourActive(false)} />
+      ) : null}
 
       {status ? (
         <div
@@ -376,8 +442,9 @@ export default function CreateStreamPage() {
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Recipient wallet" hint="The wallet address that will receive the tokens.">
+            <Field label="Recipient wallet" hint="The wallet address that will receive the tokens." fieldId="field-recipient">
               <input
+                id="field-recipient"
                 required
                 value={form.recipient}
                 onChange={(event) =>
@@ -389,21 +456,29 @@ export default function CreateStreamPage() {
               />
             </Field>
 
-            <Field label="Token contract address" hint="The contract address of the token you want to distribute.">
+            <Field label="Token" hint="Search by name or ticker, or paste a custom contract address." fieldId="field-token">
+              <div id="field-token">
+                <TokenSearch
+                  value={form.mint}
+                  onChange={(mint) =>
+                    setForm((value) => ({ ...value, mint }))
+                  }
+                />
+              </div>
+              {/* hidden required input to enforce form validation */}
               <input
+                tabIndex={-1}
                 required
                 value={form.mint}
-                onChange={(event) =>
-                  setForm((value) => ({ ...value, mint: event.target.value }))
-                }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                placeholder="Token contract address"
-                autoComplete="off"
+                onChange={() => undefined}
+                style={{ opacity: 0, height: 0, position: "absolute" }}
+                aria-hidden="true"
               />
             </Field>
 
-            <Field label="Amount" hint="Total number of tokens to lock into this agreement.">
+            <Field label="Amount" hint="Total number of tokens to lock into this agreement." fieldId="field-amount">
               <input
+                id="field-amount"
                 required
                 inputMode="numeric"
                 value={form.amount}
@@ -427,8 +502,9 @@ export default function CreateStreamPage() {
               />
             </Field>
 
-            <Field label="Start date" hint="When the payout schedule begins.">
+            <Field label="Start date" hint="When the payout schedule begins." fieldId="field-start">
               <input
+                id="field-start"
                 required
                 type="datetime-local"
                 value={form.startDate}
@@ -439,8 +515,9 @@ export default function CreateStreamPage() {
               />
             </Field>
 
-            <Field label="Lock until (optional)" hint="Tokens are locked and cannot be claimed before this date. Leave blank for no lock period.">
+            <Field label="Lock until (optional)" hint="Tokens are locked and cannot be claimed before this date. Leave blank for no lock period." fieldId="field-cliff">
               <input
+                id="field-cliff"
                 type="datetime-local"
                 value={form.cliffDate}
                 onChange={(event) =>
@@ -450,8 +527,9 @@ export default function CreateStreamPage() {
               />
             </Field>
 
-            <Field label="End date" hint="When the last payout occurs.">
+            <Field label="End date" hint="When the last payout occurs." fieldId="field-end">
               <input
+                id="field-end"
                 required
                 type="datetime-local"
                 value={form.endDate}
@@ -462,8 +540,9 @@ export default function CreateStreamPage() {
               />
             </Field>
 
-            <Field label="Payout schedule" hint="How tokens are released over time.">
+            <Field label="Payout schedule" hint="How tokens are released over time." fieldId="field-schedule">
               <select
+                id="field-schedule"
                 value={form.streamType}
                 onChange={(event) =>
                   setForm((value) => ({
@@ -480,7 +559,7 @@ export default function CreateStreamPage() {
             </Field>
           </div>
 
-          <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground/80">
+          <label id="field-cancelable" className="flex cursor-pointer items-start gap-3 text-sm text-foreground/80">
             <input
               type="checkbox"
               checked={form.isCancelable}
@@ -521,15 +600,17 @@ export default function CreateStreamPage() {
 function Field({
   label,
   hint,
+  fieldId,
   children,
 }: {
   label: string;
   hint?: string;
+  fieldId?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="grid gap-1.5">
-      <label className="text-sm font-medium text-foreground/80">
+      <label htmlFor={fieldId} className="text-sm font-medium text-foreground/80">
         {label}
       </label>
       {children}
