@@ -9,7 +9,6 @@ export type KnownToken = {
   decimals: number;
 };
 
-// Common devnet tokens
 const DEVNET_TOKENS: KnownToken[] = [
   {
     name: "USD Coin",
@@ -18,10 +17,10 @@ const DEVNET_TOKENS: KnownToken[] = [
     decimals: 6,
   },
   {
-    name: "Bonk",
-    symbol: "BONK",
-    mint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-    decimals: 5,
+    name: "Tether USD",
+    symbol: "USDT",
+    mint: "EJwZgeZrdC8TXTQbQBoL6bfuAnFUUy1PVCMB4DYPzVaS",
+    decimals: 6,
   },
   {
     name: "Wrapped SOL",
@@ -30,9 +29,57 @@ const DEVNET_TOKENS: KnownToken[] = [
     decimals: 9,
   },
   {
-    name: "Tether USD",
-    symbol: "USDT",
-    mint: "EJwZgeZrdC8TXTQbQBoL6bfuAnFUUy1PVCMB4DYPzVaS",
+    name: "Bonk",
+    symbol: "BONK",
+    mint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
+    decimals: 5,
+  },
+  {
+    name: "Jupiter",
+    symbol: "JUP",
+    mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+    decimals: 6,
+  },
+  {
+    name: "Raydium",
+    symbol: "RAY",
+    mint: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+    decimals: 6,
+  },
+  {
+    name: "Orca",
+    symbol: "ORCA",
+    mint: "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
+    decimals: 6,
+  },
+  {
+    name: "Pyth Network",
+    symbol: "PYTH",
+    mint: "HZ1JovNiVvGqGHjms4bDGhkbmnnynG1NxZEQj9ksGSJP",
+    decimals: 6,
+  },
+  {
+    name: "Jito",
+    symbol: "JTO",
+    mint: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
+    decimals: 9,
+  },
+  {
+    name: "Marinade Staked SOL",
+    symbol: "mSOL",
+    mint: "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
+    decimals: 9,
+  },
+  {
+    name: "Samoyedcoin",
+    symbol: "SAMO",
+    mint: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+    decimals: 9,
+  },
+  {
+    name: "Dogwifhat",
+    symbol: "WIF",
+    mint: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
     decimals: 6,
   },
 ];

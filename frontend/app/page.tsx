@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ScrollReveal } from "@/components/ScrollReveal";
 
 const problemCards = [
   {
@@ -78,6 +79,7 @@ const audiences = [
 export default function Home() {
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <ScrollReveal />
       <header className="sticky top-0 z-20 border-b border-border bg-background/92 backdrop-blur">
         <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
           <Link
@@ -87,9 +89,9 @@ export default function Home() {
             Vestra
           </Link>
           <div className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
-            <a href="#features" className="rounded-md transition-colors hover:text-foreground">Features</a>
-            <a href="#how-it-works" className="rounded-md transition-colors hover:text-foreground">How it works</a>
-            <a href="#built-for" className="rounded-md transition-colors hover:text-foreground">Built for</a>
+            <a href="#features" className="nav-link rounded-md px-2 py-1 transition-colors hover:text-foreground">Features</a>
+            <a href="#how-it-works" className="nav-link rounded-md px-2 py-1 transition-colors hover:text-foreground">How it works</a>
+            <a href="#built-for" className="nav-link rounded-md px-2 py-1 transition-colors hover:text-foreground">Built for</a>
           </div>
           <Link
             href="/streams"
@@ -182,8 +184,8 @@ export default function Home() {
           {problemCards.map((card, i) => (
             <article
               key={card.title}
-              className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40"
-              style={{ animationDelay: `${i * 0.07}s` }}
+              className="reveal rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40"
+              style={{ transitionDelay: `${i * 0.08}s` }}
             >
               <h3 className="text-lg font-semibold text-card-foreground">{card.title}</h3>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">{card.body}</p>
@@ -203,8 +205,8 @@ export default function Home() {
           {features.map((feature, i) => (
             <article
               key={feature.title}
-              className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40"
-              style={{ animationDelay: `${i * 0.07}s` }}
+              className="reveal rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40"
+              style={{ transitionDelay: `${i * 0.08}s` }}
             >
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
                 {feature.note}
@@ -229,8 +231,8 @@ export default function Home() {
             {steps.map((step, i) => (
               <div
                 key={step.number}
-                className="relative grid gap-4 py-5 md:grid-cols-[3rem_1fr] md:items-start"
-                style={{ animationDelay: `${i * 0.09}s` }}
+                className="reveal relative grid gap-4 py-5 md:grid-cols-[3rem_1fr] md:items-start"
+                style={{ transitionDelay: `${i * 0.1}s` }}
               >
                 {/* Step number bubble */}
                 <div className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-card font-mono text-sm font-bold text-primary shadow-sm">
@@ -256,8 +258,8 @@ export default function Home() {
           {audiences.map((audience, i) => (
             <article
               key={audience.title}
-              className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40"
-              style={{ animationDelay: `${i * 0.07}s` }}
+              className="reveal rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40"
+              style={{ transitionDelay: `${i * 0.08}s` }}
             >
               <h3 className="text-lg font-semibold text-card-foreground">{audience.title}</h3>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">{audience.body}</p>
@@ -268,7 +270,7 @@ export default function Home() {
 
       {/* CTA banner */}
       <section className="border-y border-border bg-primary px-5 py-16 text-primary-foreground sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
+        <div className="reveal mx-auto max-w-7xl">
           <h2 className="max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl">
             Don&apos;t let token distribution become operational risk.
           </h2>
@@ -318,7 +320,7 @@ function AnimatedSection({
   return (
     <section id={id} className="border-t border-border px-5 py-16 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="animate-fade-up">
+        <div className="reveal">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
             {eyebrow}
           </p>
@@ -337,7 +339,7 @@ function AnimatedSection({
             </Link>
           ) : null}
         </div>
-        <div>{children}</div>
+        <div className="reveal" style={{ transitionDelay: "0.1s" }}>{children}</div>
       </div>
     </section>
   );
