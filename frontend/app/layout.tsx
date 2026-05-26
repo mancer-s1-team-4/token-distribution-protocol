@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ToastProvider } from "@/components/ToastProvider";
 import { WalletProvider } from "@/components/WalletProvider";
 import Script from "next/script";
 import "./globals.css";
@@ -51,7 +52,9 @@ export default function RootLayout({
         ) : null}
       </head>
       <body className="min-h-full bg-background text-foreground">
-        <WalletProvider>{children}</WalletProvider>
+        <WalletProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </WalletProvider>
       </body>
     </html>
   );
