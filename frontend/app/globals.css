@@ -78,6 +78,10 @@
   --radius: var(--radius);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -120,6 +124,12 @@ select {
     }
   }
 
+  @keyframes nav-flash {
+    0%   { background-color: transparent; }
+    30%  { background-color: color-mix(in oklch, var(--primary) 12%, transparent); }
+    100% { background-color: transparent; }
+  }
+
   .animate-fade-up {
     animation: fade-up 0.45s ease both;
   }
@@ -127,14 +137,32 @@ select {
   .animate-float {
     animation: float 8s ease-in-out infinite;
   }
+
+  /* Scroll-reveal: elements start invisible, play fade-up when .is-visible is added */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .nav-link:active {
+    animation: nav-flash 0.3s ease forwards;
+  }
 }
 
 /* Fallback: no motion — just show everything */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
-  .animate-float {
+  .animate-float,
+  .reveal {
     animation: none;
     opacity: 1;
     transform: none;
+    transition: none;
   }
 }

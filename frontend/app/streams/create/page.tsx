@@ -278,15 +278,15 @@ export default function CreateStreamPage() {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Set up automated token payments. Choose who receives them, how much, and when.
-            {" "}
-            <button
-              type="button"
-              onClick={() => setTourActive(true)}
-              className="text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              How to use this form?
-            </button>
           </p>
+          <button
+            type="button"
+            onClick={() => setTourActive(true)}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+            How to use this form?
+          </button>
         </div>
         <WalletMultiButton />
       </header>
@@ -388,58 +388,67 @@ export default function CreateStreamPage() {
           onSubmit={handleReview}
           className="grid gap-5 rounded-lg border border-border bg-card p-5 shadow-sm"
         >
-          <div className="flex flex-col gap-3 rounded-md border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-foreground">Mock token for testing</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Mint demo tokens to your wallet and use them for this vesting agreement.
-              </p>
-              <dl className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                <div>
-                  <dt>Mock balance</dt>
-                  <dd className="mt-0.5 font-mono text-sm font-semibold text-foreground">
-                    {!wallet.connected
-                      ? "Connect wallet"
-                      : isLoadingMockBalance
-                        ? "Loading..."
-                        : `${mockBalance?.amount ?? "0"} tokens`}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Mock mint</dt>
-                  <dd className="mt-0.5 break-all font-mono text-[11px] text-foreground">
-                    {mockBalance?.mockMint.toBase58() ?? MOCK_MINT.toBase58()}
-                  </dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt>Token account</dt>
-                  <dd className="mt-0.5 break-all font-mono text-[11px] text-foreground">
-                    {wallet.connected
-                      ? mockBalance?.tokenAccount.toBase58() ?? "Loading..."
-                      : "Connect wallet"}
-                  </dd>
-                </div>
-              </dl>
+          <details className="group rounded-md border border-border bg-background">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground select-none hover:text-foreground">
+              <span className="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                Devnet testing tools
+              </span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <div className="flex flex-col gap-3 border-t border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-foreground">Mock token</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Mint demo tokens to your wallet for testing on devnet.
+                </p>
+                <dl className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                  <div>
+                    <dt>Balance</dt>
+                    <dd className="mt-0.5 font-mono text-sm font-semibold text-foreground">
+                      {!wallet.connected
+                        ? "Connect wallet"
+                        : isLoadingMockBalance
+                          ? "Loading..."
+                          : `${mockBalance?.amount ?? "0"} tokens`}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Mock mint</dt>
+                    <dd className="mt-0.5 break-all font-mono text-[11px] text-foreground">
+                      {mockBalance?.mockMint.toBase58() ?? MOCK_MINT.toBase58()}
+                    </dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt>Token account</dt>
+                    <dd className="mt-0.5 break-all font-mono text-[11px] text-foreground">
+                      {wallet.connected
+                        ? mockBalance?.tokenAccount.toBase58() ?? "Loading..."
+                        : "Connect wallet"}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+              <div className="flex flex-col gap-2 sm:min-w-40">
+                <button
+                  type="button"
+                  onClick={() => void loadMockBalance()}
+                  disabled={!wallet.connected || isLoadingMockBalance}
+                  className="min-h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
+                >
+                  {isLoadingMockBalance ? "Checking..." : "Check balance"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleMintMockTokens()}
+                  disabled={!wallet.connected || isMintingMock}
+                  className="min-h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
+                >
+                  {isMintingMock ? "Minting..." : "Mint mock tokens"}
+                </button>
+              </div>
             </div>
-            <div className="flex flex-col gap-2 sm:min-w-40">
-              <button
-                type="button"
-                onClick={() => void loadMockBalance()}
-                disabled={!wallet.connected || isLoadingMockBalance}
-                className="min-h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
-              >
-                {isLoadingMockBalance ? "Checking..." : "Check balance"}
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleMintMockTokens()}
-                disabled={!wallet.connected || isMintingMock}
-                className="min-h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
-              >
-                {isMintingMock ? "Minting..." : "Mint mock tokens"}
-              </button>
-            </div>
-          </div>
+          </details>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Recipient wallet" hint="The wallet address that will receive the tokens." fieldId="field-recipient">
