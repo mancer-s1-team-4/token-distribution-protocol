@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export type KnownToken = {
   name: string;
@@ -9,7 +9,7 @@ export type KnownToken = {
   decimals: number;
 };
 
-// Common devnet tokens — mint addresses are devnet equivalents
+// Common devnet tokens
 const DEVNET_TOKENS: KnownToken[] = [
   {
     name: "USD Coin",
@@ -52,17 +52,15 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [manualMode, setManualMode] = useState(false);
-  const [selectedToken, setSelectedToken] = useState<KnownToken | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sync external value changes (e.g., form reset)
-  useEffect(() => {
-    if (!value) {
-      setQuery("");
-      setSelectedToken(null);
-      setManualMode(false);
-    }
-  }, [value]);
+  // Derive selectedToken from value — no state needed
+  const selectedToken = useMemo(
+    () => DEVNET_TOKENS.find((t) => t.mint === value) ?? null,
+    [value]
+  );
+
+  // No sync effect needed — parent resets via key prop change.
 
   const filtered = query
     ? DEVNET_TOKENS.filter(
@@ -73,8 +71,7 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
     : DEVNET_TOKENS;
 
   function selectToken(token: KnownToken) {
-    setSelectedToken(token);
-    setQuery(token.symbol);
+    setQuery("");
     setOpen(false);
     setManualMode(false);
     onChange(token.mint, token.decimals);
@@ -110,7 +107,10 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
   // Close on outside click
   useEffect(() => {
     function handleOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -144,9 +144,7 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
             Search tokens
           </button>
         </div>
-        {error ? (
-          <p className="text-xs text-destructive">{error}</p>
-        ) : null}
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
       </div>
     );
   }
@@ -175,9 +173,12 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
           <path d="m21 21-4.3-4.3" />
         </svg>
         <input
-          value={selectedToken ? `${selectedToken.name} (${selectedToken.symbol})` : query}
+          value={
+            selectedToken
+              ? `${selectedToken.name} (${selectedToken.symbol})`
+              : query
+          }
           onChange={(e) => {
-            setSelectedToken(null);
             setQuery(e.target.value);
             onChange("");
             setOpen(true);
@@ -193,7 +194,6 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
           <button
             type="button"
             onClick={() => {
-              setSelectedToken(null);
               setQuery("");
               onChange("");
               setOpen(true);
@@ -201,7 +201,20 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
             className="shrink-0 text-muted-foreground hover:text-foreground"
             aria-label="Clear selection"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
           </button>
         ) : null}
       </div>
@@ -233,7 +246,9 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
               >
                 <div>
                   <span className="font-semibold">{token.symbol}</span>
-                  <span className="ml-2 text-muted-foreground">{token.name}</span>
+                  <span className="ml-2 text-muted-foreground">
+                    {token.name}
+                  </span>
                 </div>
                 <span className="font-mono text-xs text-muted-foreground">
                   {token.mint.slice(0, 4)}…{token.mint.slice(-4)}
@@ -252,8 +267,22 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
                 }}
                 className="flex w-full items-center gap-2 border-t border-border px-4 py-2.5 text-left text-sm text-primary transition-colors hover:bg-secondary/60"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                Use this address: <span className="font-mono">{query.slice(0, 8)}…</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+                Use this address:{" "}
+                <span className="font-mono">{query.slice(0, 8)}…</span>
               </button>
             </li>
           ) : null}
@@ -269,7 +298,21 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
               }}
               className="flex w-full items-center gap-2 border-t border-border px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-secondary/60"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+              </svg>
               Paste address manually
             </button>
           </li>

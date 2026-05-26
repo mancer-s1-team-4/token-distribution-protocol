@@ -459,6 +459,7 @@ export default function CreateStreamPage() {
             <Field label="Token" hint="Search by name or ticker, or paste a custom contract address." fieldId="field-token">
               <div id="field-token">
                 <TokenSearch
+                  key={form.streamId}
                   value={form.mint}
                   onChange={(mint) =>
                     setForm((value) => ({ ...value, mint }))

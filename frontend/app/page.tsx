@@ -270,7 +270,7 @@ export default function Home() {
       <section className="border-y border-border bg-primary px-5 py-16 text-primary-foreground sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <h2 className="max-w-3xl text-3xl font-bold tracking-tight sm:text-4xl">
-            Don't let token distribution become operational risk.
+            Don&apos;t let token distribution become operational risk.
           </h2>
           <p className="mt-5 max-w-2xl text-base leading-7 text-primary-foreground/76">
             One missed release. One manual mistake. One broken promise can damage trust permanently.
