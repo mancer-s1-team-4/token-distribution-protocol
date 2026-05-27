@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { ConnectButton } from "@/components/ConnectButton";
+import { useVestraWallet } from "@/hooks/useVestraWallet";
 
 import { FormTour, type TourStep } from "@/components/FormTour";
 import { TokenSearch } from "@/components/TokenSearch";
@@ -66,7 +67,7 @@ function friendlyError(raw: string): string {
 }
 
 export default function CreateStreamPage() {
-  const wallet = useWallet();
+  const wallet = useVestraWallet();
   const { connection } = useConnection();
   const [form, setForm] = useState<CreateStreamInput>(initialForm);
   const [status, setStatus] = useState("");
@@ -294,7 +295,7 @@ export default function CreateStreamPage() {
             How to use this form?
           </button>
         </div>
-        <WalletMultiButton />
+        <ConnectButton />
       </header>
 
       {tourActive ? (
