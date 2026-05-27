@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { ConnectButton } from "@/components/ConnectButton";
+import { useVestraWallet } from "@/hooks/useVestraWallet";
 
 import {
   cancelTx,
@@ -17,7 +18,7 @@ import {
 } from "@/lib/tokenDistribution";
 
 export default function StreamsPage() {
-  const wallet = useWallet();
+  const wallet = useVestraWallet();
   const { connection } = useConnection();
   const [streams, setStreams] = useState<StreamAccount[]>([]);
   const [status, setStatus] = useState("");
@@ -126,7 +127,7 @@ export default function StreamsPage() {
           >
             New agreement
           </Link>
-          <WalletMultiButton />
+          <ConnectButton />
         </div>
       </header>
 
@@ -155,7 +156,7 @@ export default function StreamsPage() {
             Connect your Solana wallet to view and manage your token distribution agreements.
           </p>
           <div className="mt-6">
-            <WalletMultiButton />
+            <ConnectButton />
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
             New to crypto wallets?{" "}
