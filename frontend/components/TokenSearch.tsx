@@ -175,7 +175,7 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
             onChange={(e) => onChange(e.target.value)}
             placeholder="Paste token contract address"
             autoComplete="off"
-            className={`w-full rounded-md border bg-background px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            className={`w-full rounded-md border bg-secondary/45 px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
               error ? "border-destructive" : "border-border"
             }`}
           />
@@ -186,7 +186,7 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
               setQuery("");
               onChange("");
             }}
-            className="shrink-0 rounded-md border border-border px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary/50"
+            className="shrink-0 rounded-md border border-border bg-card/70 px-3 py-2 text-xs font-bold text-muted-foreground transition-colors hover:bg-secondary/70"
           >
             Search tokens
           </button>
@@ -199,7 +199,7 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
   return (
     <div ref={containerRef} className="relative">
       <div
-        className={`flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-ring ${
+        className={`flex items-center gap-2 rounded-md border bg-secondary/45 px-3 py-2 text-sm transition-colors focus-within:ring-2 focus-within:ring-ring ${
           error ? "border-destructive" : "border-border"
         }`}
       >
@@ -269,7 +269,7 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
       {open ? (
         <ul
           role="listbox"
-          className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-border bg-card shadow-lg"
+          className="absolute z-20 mt-2 w-full overflow-hidden rounded-md border border-border bg-white text-foreground shadow-lg"
         >
           {filtered.length === 0 && !looksLikePubkey(query) ? (
             <li className="px-4 py-3 text-sm text-muted-foreground">
@@ -292,7 +292,7 @@ export function TokenSearch({ value, onChange, error }: TokenSearchProps) {
                 }`}
               >
                 <div>
-                  <span className="font-semibold">{token.symbol}</span>
+                  <span className="font-bold">{token.symbol}</span>
                   <span className="ml-2 text-muted-foreground">
                     {token.name}
                   </span>

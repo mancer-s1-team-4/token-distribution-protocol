@@ -91,7 +91,7 @@ export function FormTour({ steps, onDone }: FormTourProps) {
         height: rect.height + 8,
         borderRadius: "0.5rem",
         boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)",
-        border: "2px solid var(--color-primary, #3348CC)",
+        border: "2px solid var(--ring)",
         pointerEvents: "none",
         zIndex: 49,
         transition: "top 180ms ease, left 180ms ease, width 180ms ease, height 180ms ease",
@@ -105,42 +105,45 @@ export function FormTour({ steps, onDone }: FormTourProps) {
       <div
         ref={tooltipRef}
         style={{ ...tooltipStyle, zIndex: 50 }}
-        className="rounded-lg border border-border bg-card p-4 shadow-xl"
+        className="rounded-lg border border-border bg-card/95 p-4 shadow-xl backdrop-blur"
         role="dialog"
         aria-modal="false"
         aria-label={`Tour step ${step + 1} of ${steps.length}`}
       >
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="text-xs font-bold text-muted-foreground">
             {step + 1} of {steps.length}
           </span>
           <button
             onClick={onDone}
-            className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="text-xs font-bold text-muted-foreground transition-colors hover:text-foreground"
           >
             Skip tour
           </button>
         </div>
 
-        <p className="text-sm font-semibold text-foreground">{current.label}</p>
+        <p className="font-display text-base font-bold tracking-tight text-foreground">{current.label}</p>
         <p className="mt-1 text-sm leading-5 text-muted-foreground">
           {current.explanation}
         </p>
-        <p className="mt-2 rounded-md bg-secondary/60 px-2 py-1.5 font-mono text-xs text-muted-foreground">
-          e.g. {current.example}
+        <p className="mt-2 min-w-0 rounded-md bg-secondary/60 px-2 py-1.5 text-xs text-muted-foreground">
+          <span className="font-sans">e.g. </span>
+          <span className="inline-block max-w-full truncate align-bottom font-mono">
+            {current.example}
+          </span>
         </p>
 
         <div className="mt-4 flex items-center justify-between gap-2">
           <button
             onClick={back}
             disabled={step === 0}
-            className="min-h-8 rounded-md border border-border px-3 text-xs font-semibold text-foreground transition-colors hover:bg-secondary/50 disabled:cursor-not-allowed disabled:text-foreground/30"
+            className="min-h-8 rounded-md border border-border bg-card/70 px-3 text-xs font-bold text-foreground transition-colors hover:bg-secondary/70 disabled:cursor-not-allowed disabled:text-foreground/30"
           >
             Back
           </button>
           <button
             onClick={next}
-            className="min-h-8 rounded-md bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/80"
+            className="min-h-8 rounded-md bg-primary px-4 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/88"
           >
             {step === steps.length - 1 ? "Got it, let’s start" : "Next"}
           </button>

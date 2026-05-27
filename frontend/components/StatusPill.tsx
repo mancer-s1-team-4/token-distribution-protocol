@@ -1,16 +1,16 @@
 export type StreamStatus = "Pending" | "Active" | "Completed" | "Cancelled";
 
 const styles: Record<StreamStatus, string> = {
-  Active: "bg-primary/15 text-primary",
-  Pending: "bg-secondary text-muted-foreground",
-  Completed: "bg-[#e9f8ec] text-[#187640]",
-  Cancelled: "bg-muted text-muted-foreground",
+  Active: "border-primary/25 bg-primary/12 text-primary",
+  Pending: "border-border bg-secondary/80 text-muted-foreground",
+  Completed: "border-brand-emerald/30 bg-brand-emerald/16 text-foreground",
+  Cancelled: "border-border bg-muted text-muted-foreground",
 };
 
 export function StatusPill({ status }: { status: StreamStatus }) {
   return (
     <span
-      className={`rounded-full px-3 py-1 text-xs font-semibold ${styles[status]}`}
+      className={`rounded-full border px-3 py-1 text-xs font-bold ${styles[status]}`}
     >
       {status}
     </span>

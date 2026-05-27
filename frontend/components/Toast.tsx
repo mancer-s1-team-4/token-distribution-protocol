@@ -56,7 +56,7 @@ const icons: Record<ToastState, React.ReactNode> = {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="text-[#187640]"
+      className="text-brand-emerald"
       aria-hidden="true"
     >
       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -95,11 +95,11 @@ export function Toast({
     <div
       role="status"
       aria-live="polite"
-      className="flex w-80 items-start gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-lg"
+      className="flex w-80 items-start gap-3 rounded-lg border border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur"
       style={{ animation: "toast-in 200ms ease forwards" }}
     >
       <span className="mt-0.5 shrink-0">{icons[toast.state]}</span>
-      <div className="flex-1 text-sm text-foreground">
+      <div className="flex-1 text-sm font-medium text-foreground">
         {toast.href ? (
           <a
             href={toast.href}
