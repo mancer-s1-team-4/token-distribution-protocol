@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import { ConnectButton } from "@/components/ConnectButton";
+import { useToast } from "@/components/ToastProvider";
 import { useVestraWallet } from "@/hooks/useVestraWallet";
 
 import { FormTour, type TourStep } from "@/components/FormTour";
 import { TokenSearch } from "@/components/TokenSearch";
+import { friendlyError } from "@/lib/errors";
+import { fetchMintDecimals, toBaseUnits } from "@/lib/mint";
 import {
   MOCK_TOKEN_MINT_AMOUNT,
   createStreamTx,
@@ -18,6 +22,7 @@ import {
   type CreateStreamInput,
   type StreamType,
 } from "@/lib/tokenDistribution";
+import { runTx } from "@/lib/txRunner";
 
 const initialForm: CreateStreamInput = {
   streamId: Date.now().toString(),
@@ -41,35 +46,64 @@ function shortenSignature(signature: string): string {
   return `${signature.slice(0, 8)}...${signature.slice(-8)}`;
 }
 
-function friendlyError(raw: string): string {
-  if (/invalid public key/i.test(raw)) {
-    return "One of the addresses you entered is not a valid wallet address. Check the Recipient wallet and Token contract address fields.";
+type FormErrors = Partial<
+  Record<"recipient" | "mint" | "amount" | "startDate" | "cliffDate" | "endDate", string>
+>;
+
+function isValidPublicKey(value: string): boolean {
+  try {
+    new PublicKey(value);
+    return true;
+  } catch {
+    return false;
   }
-  if (/user rejected/i.test(raw) || /rejected/i.test(raw)) {
-    return "You cancelled the transaction in your wallet. No tokens were moved.";
+}
+
+function validateForm(form: CreateStreamInput): FormErrors {
+  const errors: FormErrors = {};
+  const amount = Number(form.amount.replaceAll(",", ""));
+  const start = new Date(form.startDate).getTime();
+  const cliff = form.cliffDate ? new Date(form.cliffDate).getTime() : null;
+  const end = new Date(form.endDate).getTime();
+
+  if (!isValidPublicKey(form.recipient)) {
+    errors.recipient = "Enter a valid Solana wallet address.";
   }
-  if (/NO_CREATOR_TOKEN_ACCOUNT/i.test(raw) || (/(AccountNotInitialized|3012)/i.test(raw) && /creator_token_account/i.test(raw))) {
-    return "You don't have a token account for this token. You need to hold some of this token in your wallet before you can stream it. If you're testing, use the Devnet testing tools to mint mock tokens first.";
+  if (!isValidPublicKey(form.mint)) {
+    errors.mint = "Enter a valid token mint address.";
   }
-  if (/AccountNotInitialized|3012/i.test(raw)) {
-    return "A required account hasn't been set up yet. Make sure the token exists on devnet and you hold a balance of it.";
+  if (!Number.isFinite(amount) || amount <= 0) {
+    errors.amount = "Amount must be greater than 0.";
   }
-  if (/insufficient/i.test(raw)) {
-    return "Your wallet does not have enough tokens to fund this agreement.";
+  if (!Number.isFinite(start)) {
+    errors.startDate = "Choose a valid start date.";
   }
-  if (/fallback/i.test(raw) || /instruction.*not.*found/i.test(raw)) {
-    return "Mint mock token is not available on the deployed program yet. Run pnpm run upgrade:devnet from contracts, then refresh this page.";
+  if (!Number.isFinite(end)) {
+    errors.endDate = "Choose a valid end date.";
+  } else if (Number.isFinite(start) && end <= start) {
+    errors.endDate = "End date must be after the start date.";
   }
-  if (/Transaction failed/i.test(raw)) {
-    return "The transaction did not go through. Check your inputs and try again.";
+  if (cliff !== null) {
+    if (!Number.isFinite(cliff)) {
+      errors.cliffDate = "Choose a valid lock date.";
+    } else if (Number.isFinite(start) && cliff < start) {
+      errors.cliffDate = "Lock date must be on or after the start date.";
+    }
   }
-  return raw;
+
+  return errors;
+}
+
+function hasErrors(errors: FormErrors): boolean {
+  return Object.values(errors).some(Boolean);
 }
 
 export default function CreateStreamPage() {
   const wallet = useVestraWallet();
   const { connection } = useConnection();
+  const { toast } = useToast();
   const [form, setForm] = useState<CreateStreamInput>(initialForm);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [status, setStatus] = useState("");
   const [statusTxSignature, setStatusTxSignature] = useState("");
   const [hasCopiedSignature, setHasCopiedSignature] = useState(false);
@@ -140,6 +174,12 @@ export default function CreateStreamPage() {
 
   function handleReview(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const errors = validateForm(form);
+    setFormErrors(errors);
+    if (hasErrors(errors)) {
+      return;
+    }
+
     setStatus("");
     setStatusTxSignature("");
     setHasCopiedSignature(false);
@@ -176,10 +216,27 @@ export default function CreateStreamPage() {
     setIsError(false);
     setStatusTxSignature("");
     setHasCopiedSignature(false);
-    setStatus("Preparing transaction...");
+    setStatus("");
 
     try {
-      const signature = await createStreamTx(connection, wallet, form);
+      const mint = new PublicKey(form.mint);
+      let decimals: number;
+      try {
+        decimals = await fetchMintDecimals(connection, mint);
+      } catch {
+        throw new Error("Token not found on devnet — check the address.");
+      }
+
+      const baseUnitAmount = toBaseUnits(form.amount, decimals);
+      const signature = await runTx({
+        connection,
+        toast,
+        action: () =>
+          createStreamTx(connection, wallet, {
+            ...form,
+            amount: baseUnitAmount.toString(),
+          }),
+      });
       setStatus("Agreement created.");
       setStatusTxSignature(signature);
       setIsError(false);
@@ -204,7 +261,16 @@ export default function CreateStreamPage() {
     setStatus("Minting mock tokens...");
 
     try {
-      const { signature, mockMint } = await mintMockTokensTx(connection, wallet);
+      let mockMint = MOCK_MINT;
+      const signature = await runTx({
+        connection,
+        toast,
+        action: async () => {
+          const result = await mintMockTokensTx(connection, wallet);
+          mockMint = result.mockMint;
+          return result.signature;
+        },
+      });
       setForm((value) => ({
         ...value,
         mint: mockMint.toBase58(),
@@ -458,28 +524,42 @@ export default function CreateStreamPage() {
           </details>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Recipient wallet" hint="The wallet address that will receive the tokens." fieldId="field-recipient">
+            <Field
+              label="Recipient wallet"
+              hint="The wallet address that will receive the tokens."
+              fieldId="field-recipient"
+              error={formErrors.recipient}
+            >
               <input
                 id="field-recipient"
                 required
                 value={form.recipient}
-                onChange={(event) =>
-                  setForm((value) => ({ ...value, recipient: event.target.value }))
-                }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onChange={(event) => {
+                  setForm((value) => ({ ...value, recipient: event.target.value }));
+                  setFormErrors((value) => ({ ...value, recipient: undefined }));
+                }}
+                className={`w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  formErrors.recipient ? "border-destructive" : "border-border"
+                }`}
                 placeholder="Recipient's wallet address"
                 autoComplete="off"
               />
             </Field>
 
-            <Field label="Token" hint="Search by name or ticker, or paste a custom contract address." fieldId="field-token">
+            <Field
+              label="Token"
+              hint="Search by name or ticker, or paste a custom contract address."
+              fieldId="field-token"
+            >
               <div id="field-token">
                 <TokenSearch
                   key={form.streamId}
                   value={form.mint}
-                  onChange={(mint) =>
-                    setForm((value) => ({ ...value, mint }))
-                  }
+                  onChange={(mint) => {
+                    setForm((value) => ({ ...value, mint }));
+                    setFormErrors((value) => ({ ...value, mint: undefined }));
+                  }}
+                  error={formErrors.mint}
                 />
               </div>
               {/* hidden required input to enforce form validation */}
@@ -493,16 +573,24 @@ export default function CreateStreamPage() {
               />
             </Field>
 
-            <Field label="Amount" hint="Total number of tokens to lock into this agreement." fieldId="field-amount">
+            <Field
+              label="Amount"
+              hint="Total number of tokens to lock into this agreement."
+              fieldId="field-amount"
+              error={formErrors.amount}
+            >
               <input
                 id="field-amount"
                 required
-                inputMode="numeric"
+                inputMode="decimal"
                 value={form.amount}
-                onChange={(event) =>
-                  setForm((value) => ({ ...value, amount: event.target.value }))
-                }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onChange={(event) => {
+                  setForm((value) => ({ ...value, amount: event.target.value }));
+                  setFormErrors((value) => ({ ...value, amount: undefined }));
+                }}
+                className={`w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  formErrors.amount ? "border-destructive" : "border-border"
+                }`}
                 placeholder="Number of tokens (e.g. 1000)"
               />
             </Field>
@@ -519,41 +607,65 @@ export default function CreateStreamPage() {
               />
             </Field>
 
-            <Field label="Start date" hint="When the payout schedule begins." fieldId="field-start">
+            <Field
+              label="Start date"
+              hint="When the payout schedule begins."
+              fieldId="field-start"
+              error={formErrors.startDate}
+            >
               <input
                 id="field-start"
                 required
                 type="datetime-local"
                 value={form.startDate}
-                onChange={(event) =>
-                  setForm((value) => ({ ...value, startDate: event.target.value }))
-                }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onChange={(event) => {
+                  setForm((value) => ({ ...value, startDate: event.target.value }));
+                  setFormErrors((value) => ({ ...value, startDate: undefined }));
+                }}
+                className={`w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  formErrors.startDate ? "border-destructive" : "border-border"
+                }`}
               />
             </Field>
 
-            <Field label="Lock until (optional)" hint="Tokens are locked and cannot be claimed before this date. Leave blank for no lock period." fieldId="field-cliff">
+            <Field
+              label="Lock until (optional)"
+              hint="Tokens are locked and cannot be claimed before this date. Leave blank for no lock period."
+              fieldId="field-cliff"
+              error={formErrors.cliffDate}
+            >
               <input
                 id="field-cliff"
                 type="datetime-local"
                 value={form.cliffDate}
-                onChange={(event) =>
-                  setForm((value) => ({ ...value, cliffDate: event.target.value }))
-                }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onChange={(event) => {
+                  setForm((value) => ({ ...value, cliffDate: event.target.value }));
+                  setFormErrors((value) => ({ ...value, cliffDate: undefined }));
+                }}
+                className={`w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  formErrors.cliffDate ? "border-destructive" : "border-border"
+                }`}
               />
             </Field>
 
-            <Field label="End date" hint="When the last payout occurs." fieldId="field-end">
+            <Field
+              label="End date"
+              hint="When the last payout occurs."
+              fieldId="field-end"
+              error={formErrors.endDate}
+            >
               <input
                 id="field-end"
                 required
                 type="datetime-local"
                 value={form.endDate}
-                onChange={(event) =>
-                  setForm((value) => ({ ...value, endDate: event.target.value }))
-                }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onChange={(event) => {
+                  setForm((value) => ({ ...value, endDate: event.target.value }));
+                  setFormErrors((value) => ({ ...value, endDate: undefined }));
+                }}
+                className={`w-full rounded-md border bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  formErrors.endDate ? "border-destructive" : "border-border"
+                }`}
               />
             </Field>
 
@@ -618,11 +730,13 @@ function Field({
   label,
   hint,
   fieldId,
+  error,
   children,
 }: {
   label: string;
   hint?: string;
   fieldId?: string;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -634,6 +748,7 @@ function Field({
       {hint ? (
         <p className="text-xs text-muted-foreground">{hint}</p>
       ) : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
   );
 }
