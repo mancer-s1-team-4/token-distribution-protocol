@@ -11,6 +11,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { useToast } from "@/components/ToastProvider";
 import { useVestraWallet } from "@/hooks/useVestraWallet";
 import { fetchMintDecimals, formatUiAmount } from "@/lib/mint";
+import { getConfiguredCluster } from "@/lib/network";
 import {
   calculateClaimable,
   calculateVested,
@@ -33,7 +34,7 @@ export default function StreamsPage() {
   const { connection } = useConnection();
   const { toast } = useToast();
   const [streams, setStreams] = useState<StreamAccount[]>([]);
-  const [mintDecimals, setMintDecimals] = useState<Record<string, number>>({});
+  const [mintDecimals, setMintDecimals] = useState<Record<string, number | null>>({});
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
@@ -66,13 +67,18 @@ export default function StreamsPage() {
       setStreams(walletStreams);
       setStatus("");
 
+      const streamsByMint = new Map(
+        walletStreams.map((stream) => [
+          stream.account.mint.toBase58(),
+          stream.account.mint,
+        ])
+      );
       const decimalsEntries = await Promise.all(
-        walletStreams.map(async (stream) => {
-          const mint = stream.account.mint.toBase58();
+        [...streamsByMint.entries()].map(async ([mintAddress, mint]) => {
           try {
-            return [mint, await fetchMintDecimals(connection, stream.account.mint)] as const;
+            return [mintAddress, await fetchMintDecimals(connection, mint)] as const;
           } catch {
-            return [mint, 0] as const;
+            return [mintAddress, null] as const;
           }
         })
       );
@@ -114,8 +120,9 @@ export default function StreamsPage() {
     ? cancelTarget.account.amountTotal.sub(calculateVested(cancelTarget.account, nowSec))
     : null;
   const cancelDecimals = cancelTarget
-    ? mintDecimals[cancelTarget.account.mint.toBase58()] ?? 0
-    : 0;
+    ? mintDecimals[cancelTarget.account.mint.toBase58()]
+    : undefined;
+  const cluster = getConfiguredCluster();
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-8">
@@ -133,7 +140,7 @@ export default function StreamsPage() {
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <h1 className="text-3xl font-bold text-foreground">Agreements</h1>
             <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-medium text-foreground">
-              Devnet
+              {cluster.label}
             </span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -212,10 +219,12 @@ export default function StreamsPage() {
           ) : (
             <section className="grid gap-4">
               {streams.map((stream) => {
-                const decimals = mintDecimals[stream.account.mint.toBase58()] ?? 0;
+                const decimals = mintDecimals[stream.account.mint.toBase58()];
+                const hasDecimals = typeof decimals === "number";
                 const vested = calculateVested(stream.account, nowSec);
                 const claimable = calculateClaimable(stream.account, nowSec);
                 const statusValue = deriveStatus(stream.account, nowSec);
+                const isFullyVested = vested.gte(stream.account.amountTotal);
                 const claimedPercent = stream.account.amountTotal.isZero()
                   ? 0
                   : Math.min(
@@ -263,10 +272,10 @@ export default function StreamsPage() {
                         </div>
 
                         <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                          <Info label="Total" value={formatUiAmount(stream.account.amountTotal, decimals)} />
-                          <Info label="Unlocked" value={formatUiAmount(vested, decimals)} />
-                          <Info label="Claimed" value={formatUiAmount(stream.account.amountClaimed, decimals)} />
-                          <Info label="Claimable now" value={formatUiAmount(claimable, decimals)} />
+                          <Info label="Total" value={formatAmountOrUnknown(stream.account.amountTotal, decimals)} />
+                          <Info label="Unlocked" value={formatAmountOrUnknown(vested, decimals)} />
+                          <Info label="Claimed" value={formatAmountOrUnknown(stream.account.amountClaimed, decimals)} />
+                          <Info label="Claimable now" value={formatAmountOrUnknown(claimable, decimals)} />
                           <Info label="Start" value={formatDate(stream.account.startTime)} />
                           <Info label="End" value={formatDate(stream.account.endTime)} />
                           <Info
@@ -294,6 +303,11 @@ export default function StreamsPage() {
                           <p className="mt-1 text-xs text-muted-foreground">
                             {claimedPercent.toFixed(1)}% claimed
                           </p>
+                          {!hasDecimals ? (
+                            <p className="mt-1 text-xs text-destructive">
+                              Token decimals unavailable. Amounts are hidden until the mint can be loaded.
+                            </p>
+                          ) : null}
                         </div>
                       </div>
 
@@ -309,7 +323,17 @@ export default function StreamsPage() {
                         </button>
                         <button
                           onClick={() => setCancelTarget(stream)}
-                          disabled={!isCreator || stream.account.isCancelled || !stream.account.isCancelable}
+                          disabled={
+                            !isCreator ||
+                            stream.account.isCancelled ||
+                            !stream.account.isCancelable ||
+                            isFullyVested
+                          }
+                          title={
+                            isFullyVested
+                              ? "Cancellation is unavailable because this stream is fully vested."
+                              : undefined
+                          }
                           className="min-h-10 rounded-md border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
                         >
                           Cancel
@@ -325,7 +349,7 @@ export default function StreamsPage() {
                             <div key={`${stream.publicKey.toBase58()}-${index}`} className="flex flex-col gap-3 rounded-md bg-secondary/40 p-3 sm:flex-row sm:items-center sm:justify-between">
                               <div className="text-sm">
                                 <p className="font-medium text-foreground">
-                                  #{index + 1} - {formatUiAmount(milestone.amount, decimals)} tokens
+                                  #{index + 1} - {formatAmountOrUnknown(milestone.amount, decimals)} tokens
                                 </p>
                                 <p className="text-xs text-muted-foreground">
                                   {milestone.isVerified ? "Verified" : "Waiting for verifier"}
@@ -360,7 +384,7 @@ export default function StreamsPage() {
         title="Cancel agreement?"
         body={
           cancelTarget && cancelAmount
-            ? `This returns roughly ${formatUiAmount(cancelAmount, cancelDecimals)} unreleased tokens to the sender and stops future vesting.`
+            ? formatCancelBody(cancelAmount, cancelDecimals)
             : ""
         }
         confirmLabel="Cancel agreement"
@@ -376,6 +400,25 @@ export default function StreamsPage() {
       />
     </main>
   );
+}
+
+function formatAmountOrUnknown(
+  value: Parameters<typeof formatUiAmount>[0],
+  decimals: number | null | undefined
+) {
+  return typeof decimals === "number" ? formatUiAmount(value, decimals) : "-";
+}
+
+function formatCancelBody(
+  unreleasedAmount: Parameters<typeof formatUiAmount>[0],
+  decimals: number | null | undefined
+) {
+  const unreleasedText =
+    typeof decimals === "number"
+      ? `roughly ${formatUiAmount(unreleasedAmount, decimals)} unreleased tokens`
+      : "the unreleased tokens";
+
+  return `This returns ${unreleasedText} to the sender, transfers any vested-but-unclaimed tokens to the recipient, and stops future vesting.`;
 }
 
 function Info({ label, value }: { label: string; value: string }) {

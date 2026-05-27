@@ -1,6 +1,7 @@
 import type { Connection } from "@solana/web3.js";
 
 import { friendlyError } from "./errors";
+import { getExplorerTxUrl } from "./network";
 
 type ToastHandle = {
   update: (
@@ -28,7 +29,7 @@ export async function runTx(options: {
     toastHandle.update("info", "Sending to Solana...");
     await options.connection.confirmTransaction(signature, "confirmed");
 
-    const href = `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+    const href = getExplorerTxUrl(signature);
     toastHandle.update("success", "Confirmed - view on Explorer", { href });
     return signature;
   } catch (error) {

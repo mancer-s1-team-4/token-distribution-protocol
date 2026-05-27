@@ -12,6 +12,7 @@ import { FormTour, type TourStep } from "@/components/FormTour";
 import { TokenSearch } from "@/components/TokenSearch";
 import { friendlyError } from "@/lib/errors";
 import { fetchMintDecimals, toBaseUnits } from "@/lib/mint";
+import { getConfiguredCluster } from "@/lib/network";
 import {
   MOCK_TOKEN_MINT_AMOUNT,
   createStreamTx,
@@ -88,6 +89,8 @@ function validateForm(form: CreateStreamInput): FormErrors {
       errors.cliffDate = "Choose a valid lock date.";
     } else if (Number.isFinite(start) && cliff < start) {
       errors.cliffDate = "Lock date must be on or after the start date.";
+    } else if (Number.isFinite(end) && cliff > end) {
+      errors.cliffDate = "Lock date must be on or before the end date.";
     }
   }
 
@@ -224,7 +227,9 @@ export default function CreateStreamPage() {
       try {
         decimals = await fetchMintDecimals(connection, mint);
       } catch {
-        throw new Error("Token not found on devnet — check the address.");
+        throw new Error(
+          `Token not found on ${getConfiguredCluster().label.toLowerCase()} - check the address.`
+        );
       }
 
       const baseUnitAmount = toBaseUnits(form.amount, decimals);
