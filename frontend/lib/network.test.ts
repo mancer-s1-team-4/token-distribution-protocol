@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { getConfiguredCluster, getExplorerTxUrl } from "./network";
+import {
+  getConfiguredCluster,
+  getExplorerAddressUrl,
+  getExplorerTxUrl,
+} from "./network";
 
 describe("network helpers", () => {
   test("defaults to devnet when no RPC URL is configured", () => {
@@ -30,6 +34,12 @@ describe("network helpers", () => {
   test("builds explorer transaction URLs from configured cluster", () => {
     expect(getExplorerTxUrl("abc", undefined)).toBe(
       "https://explorer.solana.com/tx/abc?cluster=devnet"
+    );
+  });
+
+  test("builds explorer address URLs from configured cluster", () => {
+    expect(getExplorerAddressUrl("address123", undefined)).toBe(
+      "https://explorer.solana.com/address/address123?cluster=devnet"
     );
   });
 });

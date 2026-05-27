@@ -42,7 +42,7 @@ export function Address({ address, chars = 4 }: AddressProps) {
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-[#187640]"
+            className="text-brand-emerald"
             aria-hidden="true"
           >
             <path d="m20 6-11 11-5-5" />

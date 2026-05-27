@@ -48,9 +48,9 @@ export function ConnectButton() {
         <button
           type="button"
           onClick={() => setShowMenu((v) => !v)}
-          className="flex items-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary/80"
+          className="flex min-h-10 items-center gap-2 rounded-md border border-border bg-card/82 px-3 text-sm font-bold text-foreground backdrop-blur transition-colors hover:bg-secondary/80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <span className="inline-block h-2 w-2 rounded-full bg-green-400" />
+          <span className="inline-block h-2 w-2 rounded-full bg-brand-emerald" />
           {displayName}
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -69,10 +69,10 @@ export function ConnectButton() {
         </button>
 
         {showMenu ? (
-          <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-border bg-popover py-1 shadow-lg">
+          <div className="absolute right-0 top-full z-50 mt-2 min-w-[160px] rounded-md border border-border bg-popover/95 py-1 shadow-lg backdrop-blur">
             <button
               type="button"
-              className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent"
+              className="w-full px-4 py-2 text-left text-sm font-semibold text-foreground hover:bg-accent"
               onClick={async () => {
                 setShowMenu(false);
                 if (isAdapterConnected) await adapterWallet.disconnect();
@@ -92,20 +92,20 @@ export function ConnectButton() {
       <button
         type="button"
         onClick={() => setShowMenu((v) => !v)}
-        className="relative rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-md transition-colors hover:bg-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+        className="relative min-h-10 rounded-md bg-brand-accent px-4 text-sm font-bold text-primary-foreground transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <span className="absolute -right-1 -top-1 flex h-3 w-3">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-          <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-500" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-amber opacity-75" />
+          <span className="relative inline-flex h-3 w-3 rounded-full bg-brand-amber" />
         </span>
         Connect Wallet
       </button>
 
       {showMenu ? (
-        <div className="absolute right-0 top-full z-50 mt-1 min-w-[210px] rounded-lg border border-border bg-popover py-1 shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-2 min-w-[210px] rounded-md border border-border bg-popover/95 py-1 shadow-lg backdrop-blur">
           <button
             type="button"
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground hover:bg-accent"
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-accent"
             onClick={() => {
               setShowMenu(false);
               login();
@@ -131,7 +131,7 @@ export function ConnectButton() {
           <div className="my-1 border-t border-border" />
           <button
             type="button"
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground hover:bg-accent"
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-semibold text-foreground hover:bg-accent"
             onClick={() => {
               setShowMenu(false);
               setVisible(true);

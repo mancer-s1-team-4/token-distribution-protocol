@@ -36,3 +36,17 @@ export function getExplorerTxUrl(
 
   return url.toString();
 }
+
+export function getExplorerAddressUrl(
+  address: string,
+  rpcUrl = process.env.NEXT_PUBLIC_RPC_URL
+): string {
+  const cluster = getConfiguredCluster(rpcUrl);
+  const url = new URL(`https://explorer.solana.com/address/${address}`);
+
+  if (cluster.explorerCluster) {
+    url.searchParams.set("cluster", cluster.explorerCluster);
+  }
+
+  return url.toString();
+}
