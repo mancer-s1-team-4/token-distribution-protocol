@@ -10,6 +10,10 @@ import { useVestraWallet } from "@/hooks/useVestraWallet";
 
 import { FormTour, type TourStep } from "@/components/FormTour";
 import { TokenSearch } from "@/components/TokenSearch";
+import {
+  DEMO_MODE_STORAGE_KEY,
+  parseDemoModeValue,
+} from "@/lib/demoMode";
 import { friendlyError } from "@/lib/errors";
 import { fetchMintDecimals, toBaseUnits } from "@/lib/mint";
 import {
@@ -129,6 +133,8 @@ export default function CreateStreamPage() {
   const [isLoadingMockBalance, setIsLoadingMockBalance] = useState(false);
   const [mockBalance, setMockBalance] = useState<MockTokenBalance | null>(null);
   const [solBalance, setSolBalance] = useState<number | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [demoPublicKey, setDemoPublicKey] = useState("");
   const [isReviewing, setIsReviewing] = useState(false);
   const [tourActive, setTourActive] = useState(false);
 
@@ -207,8 +213,47 @@ export default function CreateStreamPage() {
     setIsReviewing(true);
   }
 
+  async function loadDemoWallet() {
+    const response = await fetch("/api/demo");
+    const result = (await response.json()) as {
+      publicKey?: string;
+      mockMint?: string;
+      error?: string;
+    };
+
+    if (!response.ok || result.error || !result.publicKey || !result.mockMint) {
+      throw new Error(result.error ?? "Demo wallet is unavailable.");
+    }
+
+    setDemoPublicKey(result.publicKey);
+    setForm((value) => ({
+      ...value,
+      recipient: value.recipient || result.publicKey || "",
+      mint: value.mint || result.mockMint || "",
+      amount: value.amount || "1000",
+    }));
+  }
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const active = parseDemoModeValue(
+        window.localStorage.getItem(DEMO_MODE_STORAGE_KEY)
+      );
+      setIsDemoMode(active);
+      if (active) {
+        void loadDemoWallet();
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   const loadMockBalance = useCallback(async () => {
-    if (!wallet.publicKey) {
+    const owner = isDemoMode && demoPublicKey
+      ? new PublicKey(demoPublicKey)
+      : wallet.publicKey;
+
+    if (!owner) {
       setMockBalance({
         mockMint: MOCK_MINT,
         tokenAccount: MOCK_MINT,
@@ -220,11 +265,11 @@ export default function CreateStreamPage() {
 
     setIsLoadingMockBalance(true);
     try {
-      setMockBalance(await fetchMockTokenBalance(connection, wallet.publicKey));
+      setMockBalance(await fetchMockTokenBalance(connection, owner));
     } finally {
       setIsLoadingMockBalance(false);
     }
-  }, [connection, wallet.publicKey]);
+  }, [connection, demoPublicKey, isDemoMode, wallet.publicKey]);
 
   const loadSolBalance = useCallback(async () => {
     if (!wallet.publicKey) {
@@ -266,21 +311,47 @@ export default function CreateStreamPage() {
       try {
         decimals = await fetchMintDecimals(connection, mint);
       } catch {
+        if (isDemoMode && mint.equals(MOCK_MINT)) {
+          decimals = 0;
+        } else {
         throw new Error(
           `Token not found on ${getConfiguredCluster().label.toLowerCase()} - check the address.`
         );
+        }
       }
 
       const baseUnitAmount = toBaseUnits(form.amount, decimals);
-      const signature = await runTx({
-        connection,
-        toast,
-        action: () =>
-          createStreamTx(connection, wallet, {
-            ...form,
-            amount: baseUnitAmount.toString(),
-          }),
-      });
+      const payload = {
+        ...form,
+        amount: baseUnitAmount.toString(),
+      };
+      const signature = isDemoMode
+        ? await runTx({
+            connection,
+            toast,
+            action: async () => {
+              const response = await fetch("/api/demo/create-stream", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+              });
+              const result = (await response.json()) as {
+                signature?: string;
+                error?: string;
+              };
+
+              if (!response.ok || result.error || !result.signature) {
+                throw new Error(result.error ?? "Demo agreement failed.");
+              }
+
+              return result.signature;
+            },
+          })
+        : await runTx({
+            connection,
+            toast,
+            action: () => createStreamTx(connection, wallet, payload),
+          });
       setStatus("Agreement created.");
       setStatusTxSignature(signature);
       setLastCreatedAgreementId(agreementId);
@@ -313,6 +384,24 @@ export default function CreateStreamPage() {
         connection,
         toast,
         action: async () => {
+          if (isDemoMode) {
+            const response = await fetch("/api/demo/mint-mock", {
+              method: "POST",
+            });
+            const result = (await response.json()) as {
+              signature?: string;
+              mockMint?: string;
+              error?: string;
+            };
+
+            if (!response.ok || result.error || !result.signature || !result.mockMint) {
+              throw new Error(result.error ?? "Demo mint failed.");
+            }
+
+            mockMint = new PublicKey(result.mockMint);
+            return result.signature;
+          }
+
           const result = await mintMockTokensTx(connection, wallet);
           mockMint = result.mockMint;
           return result.signature;
@@ -335,6 +424,12 @@ export default function CreateStreamPage() {
     } finally {
       setIsMintingMock(false);
     }
+  }
+
+  function exitDemoMode() {
+    window.localStorage.removeItem(DEMO_MODE_STORAGE_KEY);
+    setIsDemoMode(false);
+    setDemoPublicKey("");
   }
 
   async function handleClaimDevnetSol() {
@@ -481,8 +576,34 @@ export default function CreateStreamPage() {
             How to use this form?
           </button>
         </div>
-        <ConnectButton />
+          <div className="flex flex-col gap-2 sm:items-end">
+            {isDemoMode ? (
+              <button
+                type="button"
+                onClick={exitDemoMode}
+                className="min-h-10 rounded-md border border-primary/30 bg-primary/10 px-4 text-sm font-bold text-foreground transition-colors hover:bg-primary/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Exit demo
+              </button>
+            ) : (
+              <ConnectButton />
+            )}
+          </div>
       </header>
+
+      {isDemoMode ? (
+        <div className="mb-5 rounded-lg border border-primary/25 bg-primary/10 p-4 text-sm backdrop-blur">
+          <p className="font-bold text-foreground">Demo mode</p>
+          <p className="mt-1 text-muted-foreground">
+            This form uses Vestra&apos;s configured devnet wallet. Recipient and mock token are filled automatically so you can test without connecting a wallet.
+          </p>
+          {demoPublicKey ? (
+            <p className="mt-2 break-all font-mono text-xs text-foreground">
+              Demo wallet: {demoPublicKey}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {tourActive ? (
         <FormTour steps={tourSteps} onDone={() => setTourActive(false)} />
@@ -584,7 +705,7 @@ export default function CreateStreamPage() {
             <button
               type="button"
               onClick={() => void confirmAndSubmit()}
-              disabled={!wallet.connected || isSubmitting}
+              disabled={(!wallet.connected && !isDemoMode) || isSubmitting}
               className="min-h-10 rounded-md bg-primary px-5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/88 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-foreground/35"
             >
               {isSubmitting ? "Sending..." : "Confirm and send"}
@@ -614,25 +735,29 @@ export default function CreateStreamPage() {
                   <div>
                     <dt>Wallet</dt>
                     <dd className="mt-0.5 truncate font-mono text-[11px] font-semibold text-foreground">
-                      {wallet.publicKey?.toBase58() ?? "Connect wallet"}
+                      {isDemoMode
+                        ? demoPublicKey || "Loading demo wallet"
+                        : wallet.publicKey?.toBase58() ?? "Connect wallet"}
                     </dd>
                   </div>
                   <div>
                     <dt>SOL balance</dt>
                     <dd className="mt-0.5 font-mono text-sm font-semibold text-foreground">
-                      {!wallet.connected
-                        ? "Connect wallet"
-                        : isLoadingSolBalance
-                          ? "Loading..."
-                          : solBalance === null
-                            ? "Unavailable"
-                            : `${solBalance.toFixed(4)} SOL`}
+                      {isDemoMode
+                        ? "Managed by demo wallet"
+                        : !wallet.connected
+                          ? "Connect wallet"
+                          : isLoadingSolBalance
+                            ? "Loading..."
+                            : solBalance === null
+                              ? "Unavailable"
+                              : solBalance.toFixed(4) + " SOL"}
                     </dd>
                   </div>
                   <div>
                     <dt>Balance</dt>
                     <dd className="mt-0.5 font-mono text-sm font-semibold text-foreground">
-                      {!wallet.connected
+                      {!wallet.connected && !isDemoMode
                         ? "Connect wallet"
                         : isLoadingMockBalance
                           ? "Loading..."
@@ -664,7 +789,7 @@ export default function CreateStreamPage() {
                   <div className="sm:col-span-2">
                     <dt>Token account</dt>
                     <dd className="mt-1">
-                      {!wallet.connected ? (
+                      {!wallet.connected && !isDemoMode ? (
                         <span className="text-xs text-muted-foreground">Connect wallet</span>
                       ) : mockBalance?.tokenAccount ? (
                         <a
@@ -686,7 +811,7 @@ export default function CreateStreamPage() {
                 <button
                   type="button"
                   onClick={() => void handleClaimDevnetSol()}
-                  disabled={!wallet.connected || isClaimingSol}
+                  disabled={isDemoMode || !wallet.connected || isClaimingSol}
                   className="min-h-10 rounded-md border border-border bg-card/70 px-4 text-sm font-bold text-foreground transition-colors hover:bg-secondary/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
                 >
                   {isClaimingSol ? "Claiming..." : "Mint SOL"}
@@ -698,7 +823,9 @@ export default function CreateStreamPage() {
                     void loadMockBalance();
                   }}
                   disabled={
-                    !wallet.connected || isLoadingMockBalance || isLoadingSolBalance
+                    (!wallet.connected && !isDemoMode) ||
+                    isLoadingMockBalance ||
+                    isLoadingSolBalance
                   }
                   className="min-h-10 rounded-md border border-border bg-card/70 px-4 text-sm font-bold text-foreground transition-colors hover:bg-secondary/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
                 >
@@ -709,7 +836,7 @@ export default function CreateStreamPage() {
                 <button
                   type="button"
                   onClick={() => void handleMintMockTokens()}
-                  disabled={!wallet.connected || isMintingMock}
+                  disabled={(!wallet.connected && !isDemoMode) || isMintingMock}
                   className="min-h-10 rounded-md border border-border bg-card/70 px-4 text-sm font-bold text-foreground transition-colors hover:bg-secondary/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
                 >
                   {isMintingMock ? "Minting..." : "Mint mock tokens"}
@@ -893,11 +1020,11 @@ export default function CreateStreamPage() {
 
           <div className="flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
-              {!wallet.connected ? "Connect your wallet to continue." : ""}
+              {!wallet.connected && !isDemoMode ? "Connect your wallet to continue." : ""}
             </p>
             <button
               type="submit"
-              disabled={!wallet.connected}
+              disabled={!wallet.connected && !isDemoMode}
               className="min-h-10 rounded-md bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/88 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-foreground/35 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               Review agreement

@@ -270,6 +270,14 @@ export async function fetchWalletStreams(
     return [];
   }
 
+  return fetchStreamsForAddress(connection, wallet, walletPublicKey);
+}
+
+export async function fetchStreamsForAddress(
+  connection: Connection,
+  wallet: WalletContextState,
+  walletPublicKey: PublicKey
+) {
   const program = getProgram(connection, wallet);
   const streamData = (
     program.account as unknown as {

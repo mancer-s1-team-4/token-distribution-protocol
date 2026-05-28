@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 
 import { Address } from "@/components/Address";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -10,6 +11,11 @@ import { ConnectButton } from "@/components/ConnectButton";
 import { StatusPill } from "@/components/StatusPill";
 import { useToast } from "@/components/ToastProvider";
 import { useVestraWallet } from "@/hooks/useVestraWallet";
+import {
+  DEMO_MODE_ENABLED_VALUE,
+  DEMO_MODE_STORAGE_KEY,
+  parseDemoModeValue,
+} from "@/lib/demoMode";
 import { fetchMintDecimals, formatUiAmount } from "@/lib/mint";
 import { getConfiguredCluster } from "@/lib/network";
 import {
@@ -20,6 +26,7 @@ import {
 } from "@/lib/streamMath";
 import {
   cancelTx,
+  fetchStreamsForAddress,
   fetchWalletStreams,
   formatDate,
   streamTypeLabel,
@@ -38,11 +45,17 @@ export default function StreamsPage() {
   const [status, setStatus] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [demoPublicKey, setDemoPublicKey] = useState<PublicKey | null>(null);
+  const [isStartingDemo, setIsStartingDemo] = useState(false);
   const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
   const [cancelTarget, setCancelTarget] = useState<StreamAccount | null>(null);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setHasMounted(true), 0);
+    const timeoutId = window.setTimeout(() => {
+      setIsDemoMode(parseDemoModeValue(window.localStorage.getItem(DEMO_MODE_STORAGE_KEY)));
+      setHasMounted(true);
+    }, 0);
     return () => window.clearTimeout(timeoutId);
   }, []);
 
@@ -55,7 +68,7 @@ export default function StreamsPage() {
   }, []);
 
   const loadStreams = useCallback(async () => {
-    if (!wallet.connected) {
+    if (!wallet.connected && !isDemoMode) {
       setStreams([]);
       setMintDecimals({});
       return;
@@ -63,7 +76,14 @@ export default function StreamsPage() {
 
     setIsLoading(true);
     try {
-      const walletStreams = await fetchWalletStreams(connection, wallet);
+      const walletStreams =
+        isDemoMode && demoPublicKey
+          ? await fetchStreamsForAddress(
+              connection,
+              { ...wallet, publicKey: demoPublicKey } as typeof wallet,
+              demoPublicKey
+            )
+          : await fetchWalletStreams(connection, wallet);
       setStreams(walletStreams);
       setStatus("");
 
@@ -88,7 +108,7 @@ export default function StreamsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [connection, wallet]);
+  }, [connection, demoPublicKey, isDemoMode, wallet]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -116,6 +136,58 @@ export default function StreamsPage() {
     }
   }
 
+  async function loadDemoWallet() {
+    const response = await fetch("/api/demo");
+    const result = (await response.json()) as {
+      publicKey?: string;
+      error?: string;
+    };
+
+    if (!response.ok || result.error || !result.publicKey) {
+      throw new Error(result.error ?? "Demo wallet is unavailable.");
+    }
+
+    setDemoPublicKey(new PublicKey(result.publicKey));
+    return result.publicKey;
+  }
+
+  async function startDemoMode() {
+    setIsStartingDemo(true);
+    setStatus("");
+    try {
+      await loadDemoWallet();
+      window.localStorage.setItem(DEMO_MODE_STORAGE_KEY, DEMO_MODE_ENABLED_VALUE);
+      setIsDemoMode(true);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not start demo mode.");
+    } finally {
+      setIsStartingDemo(false);
+    }
+  }
+
+  function exitDemoMode() {
+    window.localStorage.removeItem(DEMO_MODE_STORAGE_KEY);
+    setIsDemoMode(false);
+    setDemoPublicKey(null);
+    setStreams([]);
+    setMintDecimals({});
+  }
+
+  async function runDemoAction(path: string, body: Record<string, unknown>) {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const result = (await response.json()) as { signature?: string; error?: string };
+
+    if (!response.ok || result.error || !result.signature) {
+      throw new Error(result.error ?? "Demo transaction failed.");
+    }
+
+    return result.signature;
+  }
+
   const cancelAmount = cancelTarget
     ? cancelTarget.account.amountTotal.sub(calculateVested(cancelTarget.account, nowSec))
     : null;
@@ -123,6 +195,19 @@ export default function StreamsPage() {
     ? mintDecimals[cancelTarget.account.mint.toBase58()]
     : undefined;
   const cluster = getConfiguredCluster();
+  const activePublicKey = isDemoMode ? demoPublicKey : wallet.publicKey;
+
+  useEffect(() => {
+    if (!isDemoMode || demoPublicKey) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void loadDemoWallet();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [demoPublicKey, isDemoMode]);
 
   return (
     <main className="min-h-screen bg-brand-bg px-6 py-8">
@@ -148,18 +233,36 @@ export default function StreamsPage() {
             View and manage all your active token distribution agreements.
           </p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Link
-            href="/streams/create"
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Link
+              href="/streams/create"
             className="inline-flex min-h-10 items-center justify-center rounded-md bg-primary px-4 text-center text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/88 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            New agreement
-          </Link>
-          <ConnectButton />
-        </div>
-      </header>
+            >
+              New agreement
+            </Link>
+            <ConnectButton />
+          </div>
+        </header>
 
-      {!hasMounted ? null : !wallet.connected ? (
+      {isDemoMode ? (
+        <div className="mb-5 flex flex-col gap-3 rounded-lg border border-primary/25 bg-primary/10 p-4 text-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-bold text-foreground">Demo mode</p>
+            <p className="mt-1 text-muted-foreground">
+              Transactions are signed by Vestra&apos;s configured devnet demo wallet.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={exitDemoMode}
+            className="min-h-10 rounded-md border border-border bg-card/70 px-4 text-sm font-bold text-foreground transition-colors hover:bg-secondary/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            Exit demo
+          </button>
+        </div>
+      ) : null}
+
+      {!hasMounted ? null : !wallet.connected && !isDemoMode ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-card/82 px-6 py-16 text-center backdrop-blur">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md border border-border bg-secondary text-primary">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary" aria-hidden="true">
@@ -167,11 +270,19 @@ export default function StreamsPage() {
               <path d="M2 10h20" />
             </svg>
           </div>
-          <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Connect your wallet to continue</h2>
+          <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Try Vestra</h2>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            Connect your Solana wallet to view and manage your token distribution agreements.
+            Create and manage a devnet agreement without connecting a wallet, or connect your own wallet to test the real user flow.
           </p>
-          <div className="mt-6">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => void startDemoMode()}
+              disabled={isStartingDemo}
+              className="min-h-10 rounded-md bg-primary px-5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/88 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-foreground/35"
+            >
+              {isStartingDemo ? "Starting..." : "Try demo without wallet"}
+            </button>
             <ConnectButton />
           </div>
         </div>
@@ -237,8 +348,8 @@ export default function StreamsPage() {
                           .toString()
                       ) / 100
                     );
-                const isCreator = wallet.publicKey?.equals(stream.account.creator);
-                const isRecipient = wallet.publicKey?.equals(stream.account.recipient);
+                const isCreator = activePublicKey?.equals(stream.account.creator);
+                const isRecipient = activePublicKey?.equals(stream.account.recipient);
 
                 return (
                   <article key={stream.publicKey.toBase58()} className="rounded-lg border border-border bg-card/86 p-5 backdrop-blur">
@@ -315,7 +426,13 @@ export default function StreamsPage() {
                       <div className="flex min-w-48 flex-col gap-2">
                         <button
                           onClick={() =>
-                            void runStreamTx(() => withdrawTx(connection, wallet, stream))
+                            void runStreamTx(() =>
+                              isDemoMode
+                                ? runDemoAction("/api/demo/withdraw", {
+                                    streamData: stream.publicKey.toBase58(),
+                                  })
+                                : withdrawTx(connection, wallet, stream)
+                            )
                           }
                           disabled={!isRecipient || stream.account.isCancelled || claimable.isZero()}
                           className="min-h-10 rounded-md bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/88 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-foreground/35"
@@ -359,10 +476,15 @@ export default function StreamsPage() {
                               <button
                                 onClick={() =>
                                   void runStreamTx(() =>
-                                    verifyMilestoneTx(connection, wallet, stream, index)
+                                    isDemoMode
+                                      ? runDemoAction("/api/demo/verify-milestone", {
+                                          streamData: stream.publicKey.toBase58(),
+                                          milestoneIndex: index,
+                                        })
+                                      : verifyMilestoneTx(connection, wallet, stream, index)
                                   )
                                 }
-                                disabled={milestone.isVerified || !wallet.publicKey?.equals(milestone.verifier)}
+                                disabled={milestone.isVerified || !activePublicKey?.equals(milestone.verifier)}
                                 className="min-h-10 rounded-md border border-border bg-card/70 px-3 text-sm font-bold text-foreground transition-colors hover:bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
                               >
                                 Verify
@@ -394,7 +516,13 @@ export default function StreamsPage() {
           const target = cancelTarget;
           setCancelTarget(null);
           if (target) {
-            void runStreamTx(() => cancelTx(connection, wallet, target));
+            void runStreamTx(() =>
+              isDemoMode
+                ? runDemoAction("/api/demo/cancel", {
+                    streamData: target.publicKey.toBase58(),
+                  })
+                : cancelTx(connection, wallet, target)
+            );
           }
         }}
         onCancel={() => setCancelTarget(null)}

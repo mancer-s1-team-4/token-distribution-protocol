@@ -29,6 +29,7 @@ pnpm install
 | `NEXT_PUBLIC_SOLANA_CLUSTER` | Explorer cluster for custom RPC URLs (`devnet`, `testnet`, or `mainnet-beta`) | Derived from RPC URL |
 | `NEXT_PUBLIC_TDP_PROGRAM_ID` | Deployed program ID | Read from IDL (`J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3`) |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics ID (optional) | — |
+| `DEMO_WALLET_SECRET_KEY` | Server-only Solana keypair secret key JSON array for no-wallet demo mode. Falls back to `DEVNET_FAUCET_SECRET_KEY` when unset. | — |
 | `DEVNET_FAUCET_SECRET_KEY` | Server-only Solana keypair secret key JSON array for the devnet SOL faucet | — |
 | `DEVNET_FAUCET_AMOUNT_SOL` | Amount sent per faucet claim | `0.05` |
 | `DEVNET_FAUCET_MAX_BALANCE_SOL` | Faucet skips wallets already at or above this SOL balance | `0.1` |
@@ -62,7 +63,7 @@ pnpm build
 A BD teammate can demo the product end-to-end using this sequence:
 
 1. **Open the app** — click "Open app" on the landing page.
-2. **Connect wallet** — click "Select Wallet", choose Phantom or Solflare. The button shows your truncated address when connected.
+2. **Choose a test mode** — click "Try demo without wallet" to use the server-side devnet demo wallet, or connect Phantom/Solflare to test the wallet flow.
 3. **Create an agreement** — click "New agreement". Use the onboarding tour ("How to use this form?") to walk through each field step by step.
    - Search for a token (e.g. USDC) or paste a custom mint address.
    - Set recipient, amount, start and end dates.
