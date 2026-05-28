@@ -25,6 +25,13 @@ describe("network helpers", () => {
     });
   });
 
+  test("uses explicit cluster config for custom RPC endpoints", () => {
+    expect(getConfiguredCluster("https://example-rpc-provider.com", "devnet")).toEqual({
+      label: "Devnet",
+      explorerCluster: "devnet",
+    });
+  });
+
   test("labels unknown RPC endpoints without forcing an explorer cluster", () => {
     expect(getConfiguredCluster("http://127.0.0.1:8899")).toEqual({
       label: "Custom RPC",
@@ -40,6 +47,12 @@ describe("network helpers", () => {
   test("builds explorer address URLs from configured cluster", () => {
     expect(getExplorerAddressUrl("address123", undefined)).toBe(
       "https://explorer.solana.com/address/address123?cluster=devnet"
+    );
+  });
+
+  test("builds explorer URLs with explicit cluster config", () => {
+    expect(getExplorerTxUrl("abc", "https://example-rpc-provider.com", "devnet")).toBe(
+      "https://explorer.solana.com/tx/abc?cluster=devnet"
     );
   });
 });

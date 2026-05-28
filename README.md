@@ -244,6 +244,7 @@ Create `frontend/.env.local` for devnet:
 
 ```env
 NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
+NEXT_PUBLIC_SOLANA_CLUSTER=devnet
 NEXT_PUBLIC_TDP_PROGRAM_ID=J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-RLN61Y19VN
 ```

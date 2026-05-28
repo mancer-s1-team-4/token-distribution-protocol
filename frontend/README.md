@@ -25,6 +25,7 @@ pnpm install
 | Variable | Description | Default |
 |---|---|---|
 | `NEXT_PUBLIC_RPC_URL` | Solana RPC endpoint | `https://api.devnet.solana.com` |
+| `NEXT_PUBLIC_SOLANA_CLUSTER` | Explorer cluster for custom RPC URLs (`devnet`, `testnet`, or `mainnet-beta`) | Derived from RPC URL |
 | `NEXT_PUBLIC_TDP_PROGRAM_ID` | Deployed program ID | Read from IDL (`J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3`) |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics ID (optional) | — |
 
