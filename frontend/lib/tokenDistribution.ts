@@ -65,10 +65,13 @@ export type MockTokenBalance = {
   mockMint: PublicKey;
   tokenAccount: PublicKey;
   amount: string;
+  error?: string;
 };
 
 const STREAM_DATA_CREATOR_OFFSET = 8;
 const STREAM_DATA_RECIPIENT_OFFSET = STREAM_DATA_CREATOR_OFFSET + 32;
+const MIN_REQUIRED_DEVNET_SOL = 0.01;
+const LAMPORTS_PER_SOL = 1_000_000_000;
 
 function u64Le(value: anchor.BN) {
   return Uint8Array.from(value.toArray("le", 8));
@@ -198,6 +201,13 @@ export async function mintMockTokensTx(
     mockMint,
     wallet.publicKey
   );
+  const solBalance = await connection.getBalance(wallet.publicKey);
+
+  if (solBalance < MIN_REQUIRED_DEVNET_SOL * LAMPORTS_PER_SOL) {
+    throw new Error(
+      `NO_DEVNET_SOL: This wallet needs at least ${MIN_REQUIRED_DEVNET_SOL} devnet SOL to pay transaction fees and create the token account.`
+    );
+  }
 
   const signature = await program.methods
     .mintMockTokens(new anchor.BN(amount))
@@ -229,11 +239,23 @@ export async function fetchMockTokenBalance(
       tokenAccount,
       amount: balance.value.amount,
     };
-  } catch {
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not load token balance.";
+
+    if (/could not find account|invalid param|account not found/i.test(message)) {
+      return {
+        mockMint,
+        tokenAccount,
+        amount: "0",
+      };
+    }
+
     return {
       mockMint,
       tokenAccount,
       amount: "0",
+      error: message,
     };
   }
 }

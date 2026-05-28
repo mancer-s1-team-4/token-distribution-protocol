@@ -36,10 +36,14 @@ export function useVestraWallet(): WalletContextState {
         const bytes =
           tx instanceof VersionedTransaction
             ? tx.serialize()
-            : tx.serialize({ requireAllSignatures: false });
+            : tx.serialize({
+                requireAllSignatures: false,
+                verifySignatures: false,
+              });
 
         const { signedTransaction } = await privyWallet.signTransaction({
           transaction: bytes,
+          chain: "solana:devnet",
         });
 
         return (

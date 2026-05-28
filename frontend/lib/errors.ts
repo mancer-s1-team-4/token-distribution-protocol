@@ -38,6 +38,12 @@ export function friendlyError(raw: string): string {
     return "You cancelled the transaction in your wallet. No tokens were moved.";
   }
   if (
+    /NO_DEVNET_SOL/i.test(raw) ||
+    /Attempt to debit an account but found no record of a prior credit/i.test(raw)
+  ) {
+    return "This wallet needs devnet SOL before it can mint mock tokens. Fund the wallet from a Solana devnet faucet, then try again.";
+  }
+  if (
     /NO_CREATOR_TOKEN_ACCOUNT/i.test(raw) ||
     (/(AccountNotInitialized|3012)/i.test(raw) && /creator_token_account/i.test(raw))
   ) {
@@ -48,6 +54,9 @@ export function friendlyError(raw: string): string {
   }
   if (/insufficient/i.test(raw)) {
     return "Your wallet does not have enough tokens to fund this agreement.";
+  }
+  if (/429|too many requests|rate.?limit/i.test(raw)) {
+    return "The Solana RPC is rate-limiting requests. Use a dedicated devnet RPC endpoint in NEXT_PUBLIC_RPC_URL, then redeploy.";
   }
   if (/fallback/i.test(raw) || /instruction.*not.*found/i.test(raw)) {
     return "Mint mock token is not available on the deployed program yet. Run pnpm run upgrade:devnet from contracts, then refresh this page.";

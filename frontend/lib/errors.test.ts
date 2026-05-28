@@ -8,6 +8,7 @@ describe("friendlyError", () => {
     expect(friendlyError("NO_CREATOR_TOKEN_ACCOUNT")).toContain(
       "token account"
     );
+    expect(friendlyError("NO_DEVNET_SOL")).toContain("devnet SOL");
   });
 
   test("maps Anchor custom program errors from the contract", () => {

@@ -1,7 +1,10 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { useWallets as usePrivySolanaWallets } from "@privy-io/react-auth/solana";
+import {
+  useCreateWallet,
+  useWallets as usePrivySolanaWallets,
+} from "@privy-io/react-auth/solana";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useRef, useState, useEffect } from "react";
@@ -13,9 +16,11 @@ function shortenAddress(address: string) {
 export function ConnectButton() {
   const { login, logout, authenticated, user } = usePrivy();
   const { wallets: privyWallets } = usePrivySolanaWallets();
+  const { createWallet } = useCreateWallet();
   const adapterWallet = useWallet();
   const { setVisible } = useWalletModal();
   const [showMenu, setShowMenu] = useState(false);
+  const [isCreatingWallet, setIsCreatingWallet] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const privyWallet = privyWallets[0] ?? null;
@@ -23,6 +28,13 @@ export function ConnectButton() {
   const isAdapterConnected = adapterWallet.connected && !!adapterWallet.publicKey;
   const isPrivyConnected = authenticated && !!privyWallet?.address;
   const isConnected = isAdapterConnected || isPrivyConnected;
+  const hasEmbeddedSolanaWallet = !!user?.linkedAccounts.some(
+    (account) =>
+      account.type === "wallet" &&
+      account.chainType === "solana" &&
+      (account.walletClientType === "privy" ||
+        account.walletClientType === "privy-v2")
+  );
 
   const displayAddress = isAdapterConnected
     ? shortenAddress(adapterWallet.publicKey!.toBase58())
@@ -31,6 +43,25 @@ export function ConnectButton() {
     : null;
 
   const displayName = user?.email?.address ?? user?.google?.email ?? displayAddress;
+
+  async function handleCreateEmbeddedWallet() {
+    setShowMenu(false);
+    setIsCreatingWallet(true);
+    try {
+      await createWallet();
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        /already has an embedded wallet/i.test(error.message)
+      ) {
+        return;
+      }
+
+      throw error;
+    } finally {
+      setIsCreatingWallet(false);
+    }
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -41,6 +72,31 @@ export function ConnectButton() {
     if (showMenu) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showMenu]);
+
+  if (authenticated && !isConnected && hasEmbeddedSolanaWallet) {
+    return (
+      <button
+        type="button"
+        onClick={() => void login()}
+        className="relative min-h-10 rounded-md border border-border bg-card/82 px-4 text-sm font-bold text-foreground backdrop-blur transition-colors hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
+        Reconnect Wallet
+      </button>
+    );
+  }
+
+  if (authenticated && !isConnected) {
+    return (
+      <button
+        type="button"
+        disabled={isCreatingWallet}
+        onClick={() => void handleCreateEmbeddedWallet()}
+        className="relative min-h-10 rounded-md bg-brand-accent px-4 text-sm font-bold text-primary-foreground transition-colors hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-secondary disabled:text-foreground/35"
+      >
+        {isCreatingWallet ? "Creating..." : "Create Wallet"}
+      </button>
+    );
+  }
 
   if (isConnected && displayName) {
     return (

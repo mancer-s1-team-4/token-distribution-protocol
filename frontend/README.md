@@ -25,9 +25,13 @@ pnpm install
 | Variable | Description | Default |
 |---|---|---|
 | `NEXT_PUBLIC_RPC_URL` | Solana RPC endpoint | `https://api.devnet.solana.com` |
+| `NEXT_PUBLIC_RPC_WS_URL` | Solana WebSocket endpoint for Privy embedded wallet signing | Derived from `NEXT_PUBLIC_RPC_URL` |
 | `NEXT_PUBLIC_SOLANA_CLUSTER` | Explorer cluster for custom RPC URLs (`devnet`, `testnet`, or `mainnet-beta`) | Derived from RPC URL |
 | `NEXT_PUBLIC_TDP_PROGRAM_ID` | Deployed program ID | Read from IDL (`J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3`) |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics ID (optional) | — |
+| `DEVNET_FAUCET_SECRET_KEY` | Server-only Solana keypair secret key JSON array for the devnet SOL faucet | — |
+| `DEVNET_FAUCET_AMOUNT_SOL` | Amount sent per faucet claim | `0.05` |
+| `DEVNET_FAUCET_MAX_BALANCE_SOL` | Faucet skips wallets already at or above this SOL balance | `0.1` |
 
 ### Run locally
 

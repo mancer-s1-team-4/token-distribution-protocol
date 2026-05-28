@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { ConnectButton } from "@/components/ConnectButton";
 import { useToast } from "@/components/ToastProvider";
 import { useVestraWallet } from "@/hooks/useVestraWallet";
@@ -12,7 +12,11 @@ import { FormTour, type TourStep } from "@/components/FormTour";
 import { TokenSearch } from "@/components/TokenSearch";
 import { friendlyError } from "@/lib/errors";
 import { fetchMintDecimals, toBaseUnits } from "@/lib/mint";
-import { getConfiguredCluster, getExplorerAddressUrl } from "@/lib/network";
+import {
+  getConfiguredCluster,
+  getExplorerAddressUrl,
+  getExplorerTxUrl,
+} from "@/lib/network";
 import {
   MOCK_TOKEN_MINT_AMOUNT,
   createStreamTx,
@@ -114,12 +118,17 @@ export default function CreateStreamPage() {
   const [status, setStatus] = useState("");
   const [statusTxSignature, setStatusTxSignature] = useState("");
   const [hasCopiedSignature, setHasCopiedSignature] = useState(false);
+  const [lastCreatedAgreementId, setLastCreatedAgreementId] = useState("");
+  const [hasCopiedAgreementId, setHasCopiedAgreementId] = useState(false);
   const [hasCopiedMockMint, setHasCopiedMockMint] = useState(false);
   const [isError, setIsError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isClaimingSol, setIsClaimingSol] = useState(false);
+  const [isLoadingSolBalance, setIsLoadingSolBalance] = useState(false);
   const [isMintingMock, setIsMintingMock] = useState(false);
   const [isLoadingMockBalance, setIsLoadingMockBalance] = useState(false);
   const [mockBalance, setMockBalance] = useState<MockTokenBalance | null>(null);
+  const [solBalance, setSolBalance] = useState<number | null>(null);
   const [isReviewing, setIsReviewing] = useState(false);
   const [tourActive, setTourActive] = useState(false);
 
@@ -192,6 +201,8 @@ export default function CreateStreamPage() {
     setStatus("");
     setStatusTxSignature("");
     setHasCopiedSignature(false);
+    setLastCreatedAgreementId("");
+    setHasCopiedAgreementId(false);
     setIsError(false);
     setIsReviewing(true);
   }
@@ -202,6 +213,7 @@ export default function CreateStreamPage() {
         mockMint: MOCK_MINT,
         tokenAccount: MOCK_MINT,
         amount: "0",
+        error: undefined,
       });
       return;
     }
@@ -214,20 +226,41 @@ export default function CreateStreamPage() {
     }
   }, [connection, wallet.publicKey]);
 
+  const loadSolBalance = useCallback(async () => {
+    if (!wallet.publicKey) {
+      setSolBalance(null);
+      return;
+    }
+
+    setIsLoadingSolBalance(true);
+    try {
+      const lamports = await connection.getBalance(wallet.publicKey);
+      setSolBalance(lamports / LAMPORTS_PER_SOL);
+    } finally {
+      setIsLoadingSolBalance(false);
+    }
+  }, [connection, wallet.publicKey]);
+
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => void loadMockBalance(), 0);
+    const timeoutId = window.setTimeout(() => {
+      void loadMockBalance();
+      void loadSolBalance();
+    }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [loadMockBalance]);
+  }, [loadMockBalance, loadSolBalance]);
 
   async function confirmAndSubmit() {
     setIsSubmitting(true);
     setIsError(false);
     setStatusTxSignature("");
     setHasCopiedSignature(false);
+    setLastCreatedAgreementId("");
+    setHasCopiedAgreementId(false);
     setStatus("");
 
     try {
+      const agreementId = form.streamId;
       const mint = new PublicKey(form.mint);
       let decimals: number;
       try {
@@ -250,6 +283,7 @@ export default function CreateStreamPage() {
       });
       setStatus("Agreement created.");
       setStatusTxSignature(signature);
+      setLastCreatedAgreementId(agreementId);
       setIsError(false);
       setForm(initialForm);
       setIsReviewing(false);
@@ -269,6 +303,8 @@ export default function CreateStreamPage() {
     setIsError(false);
     setStatusTxSignature("");
     setHasCopiedSignature(false);
+    setLastCreatedAgreementId("");
+    setHasCopiedAgreementId(false);
     setStatus("Minting mock tokens...");
 
     try {
@@ -301,6 +337,61 @@ export default function CreateStreamPage() {
     }
   }
 
+  async function handleClaimDevnetSol() {
+    if (!wallet.publicKey) {
+      return;
+    }
+
+    setIsClaimingSol(true);
+    setIsError(false);
+    setStatusTxSignature("");
+    setHasCopiedSignature(false);
+    setLastCreatedAgreementId("");
+    setHasCopiedAgreementId(false);
+    setStatus("Requesting devnet SOL...");
+
+    try {
+      const response = await fetch("/api/devnet-faucet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipient: wallet.publicKey.toBase58() }),
+      });
+      const result = (await response.json()) as {
+        signature?: string;
+        skipped?: boolean;
+        message?: string;
+        error?: string;
+      };
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error ?? "Faucet request failed.");
+      }
+
+      if (result.skipped) {
+        setStatus(result.message ?? "Wallet already has enough devnet SOL.");
+        setStatusTxSignature("");
+      } else {
+        setStatus("Devnet SOL added.");
+        setStatusTxSignature(result.signature ?? "");
+        if (result.signature) {
+          toast("success", "Devnet SOL added - view on Explorer", {
+            href: getExplorerTxUrl(result.signature),
+          });
+        }
+      }
+
+      setIsError(false);
+      await loadSolBalance();
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : "Faucet request failed.";
+      setStatus(friendlyError(raw));
+      setStatusTxSignature("");
+      setIsError(true);
+    } finally {
+      setIsClaimingSol(false);
+    }
+  }
+
   async function copyStatusTxSignature() {
     if (!statusTxSignature) {
       return;
@@ -309,6 +400,16 @@ export default function CreateStreamPage() {
     await navigator.clipboard.writeText(statusTxSignature);
     setHasCopiedSignature(true);
     window.setTimeout(() => setHasCopiedSignature(false), 1800);
+  }
+
+  async function copyAgreementId() {
+    if (!lastCreatedAgreementId) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(lastCreatedAgreementId);
+    setHasCopiedAgreementId(true);
+    window.setTimeout(() => setHasCopiedAgreementId(false), 1800);
   }
 
   async function copyMockMintAddress() {
@@ -417,6 +518,21 @@ export default function CreateStreamPage() {
           ) : null}
           <div className="min-w-0 flex-1">
             <p>{status}</p>
+            {lastCreatedAgreementId ? (
+              <div className="mt-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+                <p className="min-w-0 truncate rounded-md border border-border bg-secondary/60 px-2 py-1 font-mono text-xs text-muted-foreground">
+                  <span className="font-sans font-medium text-foreground">Agreement ID: </span>
+                  {lastCreatedAgreementId}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void copyAgreementId()}
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center rounded-md border border-border bg-card/70 px-3 text-xs font-bold text-foreground transition-colors hover:bg-secondary focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  {hasCopiedAgreementId ? "Copied" : "Copy ID"}
+                </button>
+              </div>
+            ) : null}
             {statusTxSignature ? (
               <div className="mt-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
                 <p className="min-w-0 truncate rounded-md border border-border bg-secondary/60 px-2 py-1 font-mono text-xs text-muted-foreground">
@@ -496,14 +612,39 @@ export default function CreateStreamPage() {
                 </p>
                 <dl className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                   <div>
+                    <dt>Wallet</dt>
+                    <dd className="mt-0.5 truncate font-mono text-[11px] font-semibold text-foreground">
+                      {wallet.publicKey?.toBase58() ?? "Connect wallet"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>SOL balance</dt>
+                    <dd className="mt-0.5 font-mono text-sm font-semibold text-foreground">
+                      {!wallet.connected
+                        ? "Connect wallet"
+                        : isLoadingSolBalance
+                          ? "Loading..."
+                          : solBalance === null
+                            ? "Unavailable"
+                            : `${solBalance.toFixed(4)} SOL`}
+                    </dd>
+                  </div>
+                  <div>
                     <dt>Balance</dt>
                     <dd className="mt-0.5 font-mono text-sm font-semibold text-foreground">
                       {!wallet.connected
                         ? "Connect wallet"
                         : isLoadingMockBalance
                           ? "Loading..."
+                          : mockBalance?.error
+                            ? "Unavailable"
                           : `${mockBalance?.amount ?? "0"} tokens`}
                     </dd>
+                    {mockBalance?.error ? (
+                      <dd className="mt-1 max-w-xs text-[11px] leading-4 text-destructive">
+                        {mockBalance.error}
+                      </dd>
+                    ) : null}
                   </div>
                   <div>
                     <dt>Mock mint</dt>
@@ -544,11 +685,26 @@ export default function CreateStreamPage() {
               <div className="flex flex-col gap-2 sm:min-w-40">
                 <button
                   type="button"
-                  onClick={() => void loadMockBalance()}
-                  disabled={!wallet.connected || isLoadingMockBalance}
+                  onClick={() => void handleClaimDevnetSol()}
+                  disabled={!wallet.connected || isClaimingSol}
                   className="min-h-10 rounded-md border border-border bg-card/70 px-4 text-sm font-bold text-foreground transition-colors hover:bg-secondary/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
                 >
-                  {isLoadingMockBalance ? "Checking..." : "Check balance"}
+                  {isClaimingSol ? "Claiming..." : "Mint SOL"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void loadSolBalance();
+                    void loadMockBalance();
+                  }}
+                  disabled={
+                    !wallet.connected || isLoadingMockBalance || isLoadingSolBalance
+                  }
+                  className="min-h-10 rounded-md border border-border bg-card/70 px-4 text-sm font-bold text-foreground transition-colors hover:bg-secondary/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:text-foreground/35"
+                >
+                  {isLoadingMockBalance || isLoadingSolBalance
+                    ? "Checking..."
+                    : "Check balance"}
                 </button>
                 <button
                   type="button"
@@ -631,14 +787,6 @@ export default function CreateStreamPage() {
                   formErrors.amount ? "border-destructive" : "border-border"
                 }`}
                 placeholder="Number of tokens (e.g. 1000)"
-              />
-            </Field>
-
-            <Field label="Agreement ID" hint="A unique number to identify this agreement. Auto-generated.">
-              <input
-                readOnly
-                value={form.streamId || "Generated when you review"}
-                className="w-full cursor-not-allowed rounded-md border border-border bg-secondary/45 px-3 py-2 text-sm text-muted-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </Field>
 

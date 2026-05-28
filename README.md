@@ -244,9 +244,16 @@ Create `frontend/.env.local` for devnet:
 
 ```env
 NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
+# Optional when your RPC provider has a separate WebSocket URL:
+# NEXT_PUBLIC_RPC_WS_URL=wss://api.devnet.solana.com
 NEXT_PUBLIC_SOLANA_CLUSTER=devnet
 NEXT_PUBLIC_TDP_PROGRAM_ID=J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-RLN61Y19VN
+
+# Server-only devnet faucet. Never prefix this with NEXT_PUBLIC.
+DEVNET_FAUCET_SECRET_KEY=[1,2,3,...]
+DEVNET_FAUCET_AMOUNT_SOL=0.05
+DEVNET_FAUCET_MAX_BALANCE_SOL=0.1
 ```
 
 Run the Next.js app:
