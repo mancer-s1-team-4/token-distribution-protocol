@@ -56,7 +56,7 @@ Anchor's `Account<'info, T>` type validates:
 - The account is owned by the program (`owner == program_id`).
 - The account discriminator matches `T`.
 
-Token accounts use `token::mint` and `token::authority` constraints, validated by the SPL Token program. The escrow authority is `stream_data` (a PDA), so only the program can sign CPIs to move tokens out.
+Token accounts carry `token::mint` and `token::authority` constraints that Anchor validates during instruction account resolution — before any CPI runs. The escrow authority is `stream_data` (a PDA), so only the program can sign CPIs to move tokens out of escrow.
 
 Status: **PASS**
 
