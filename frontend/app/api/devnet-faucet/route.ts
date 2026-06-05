@@ -103,9 +103,14 @@ export async function POST(request: Request) {
       recipientBalanceSol: (recipientLamports + amountLamports) / LAMPORTS_PER_SOL,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Faucet failed.";
-    const status = /public key|recipient|JSON|secret/i.test(message) ? 400 : 500;
+    const raw = error instanceof Error ? error.message : "Faucet failed.";
 
-    return NextResponse.json({ error: message }, { status });
+    if (/secret|not configured|DEVNET_FAUCET/i.test(raw)) {
+      console.error("Faucet configuration error:", raw);
+      return NextResponse.json({ error: "Faucet is not available." }, { status: 503 });
+    }
+
+    const status = /public key|recipient|JSON/i.test(raw) ? 400 : 500;
+    return NextResponse.json({ error: raw }, { status });
   }
 }

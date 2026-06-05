@@ -1,6 +1,16 @@
+import { PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 
 import { verifyDemoMilestone } from "@/lib/server/demoTransactions";
+
+function isValidPublicKey(value: string): boolean {
+  try {
+    new PublicKey(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export const runtime = "nodejs";
 
@@ -10,12 +20,16 @@ export async function POST(request: Request) {
       streamData?: unknown;
       milestoneIndex?: unknown;
     };
-    if (typeof body.streamData !== "string") {
-      return NextResponse.json({ error: "streamData is required." }, { status: 400 });
+    if (typeof body.streamData !== "string" || !isValidPublicKey(body.streamData)) {
+      return NextResponse.json({ error: "streamData must be a valid Solana address." }, { status: 400 });
     }
-    if (typeof body.milestoneIndex !== "number") {
+    if (
+      typeof body.milestoneIndex !== "number" ||
+      !Number.isInteger(body.milestoneIndex) ||
+      body.milestoneIndex < 0
+    ) {
       return NextResponse.json(
-        { error: "milestoneIndex is required." },
+        { error: "milestoneIndex must be a non-negative integer." },
         { status: 400 }
       );
     }
