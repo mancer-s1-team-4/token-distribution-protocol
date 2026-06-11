@@ -154,7 +154,7 @@ export default function Home() {
       {/* ── Hero ─────────────────────────────────────────────────────────────── */}
       <section
         data-section="hero"
-        className="relative h-screen overflow-hidden flex flex-col justify-start pt-16 lg:justify-center lg:pt-0 px-6 lg:px-10"
+        className="relative min-h-screen lg:h-screen lg:overflow-hidden flex flex-col justify-start pt-16 lg:justify-center lg:pt-0 pb-16 lg:pb-0 px-6 lg:px-10"
       >
         <div className="mx-auto max-w-[1400px] w-full grid gap-14 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
           <div>
@@ -177,7 +177,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="hidden lg:block">
+          <div>
             <div data-parallax="hero-panel" className="rounded-xl border border-border/80 bg-hero-panel p-4" style={{ willChange: "transform" }}>
               <div className="rounded-lg border border-border/70 bg-background/70 p-5 backdrop-blur">
                 <div className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
