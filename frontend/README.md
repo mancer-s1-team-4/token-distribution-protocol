@@ -1,6 +1,6 @@
-# Vestra — Frontend
+# Vesta — Frontend
 
-Web interface for the Vestra token distribution protocol on Solana.
+Web interface for the Vesta token distribution protocol on Solana.
 
 Built with Next.js 16, Tailwind CSS v4, and Solana Wallet Adapter.
 

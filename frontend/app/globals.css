@@ -2,66 +2,69 @@
 
 @layer base {
   :root {
-    /* Aurora Ledger - evolved from Signal Navy */
-    --background: oklch(0.965 0.018 226);
-    --foreground: oklch(0.165 0.036 254);
-    --card: oklch(0.995 0.006 230);
-    --card-foreground: oklch(0.165 0.036 254);
-    --popover: oklch(0.995 0.006 230);
-    --popover-foreground: oklch(0.165 0.036 254);
-    --primary: oklch(0.48 0.215 258);
-    --primary-foreground: oklch(0.985 0.008 230);
-    --secondary: oklch(0.92 0.032 220);
-    --secondary-foreground: oklch(0.19 0.04 248);
-    --muted: oklch(0.93 0.022 225);
-    --muted-foreground: oklch(0.43 0.055 240);
-    --accent: oklch(0.82 0.145 189);
-    --accent-foreground: oklch(0.13 0.035 235);
-    --destructive: oklch(0.55 0.22 25);
+    /* Vesta — light mode (indigo-tinted neutral) */
+    --background: oklch(0.97 0.008 270);
+    --foreground: oklch(0.11 0.025 270);
+    --card: oklch(1.0 0.003 270);
+    --card-foreground: oklch(0.11 0.025 270);
+    --popover: oklch(1.0 0.003 270);
+    --popover-foreground: oklch(0.11 0.025 270);
+    --primary: oklch(0.48 0.22 272);
+    --primary-foreground: oklch(0.98 0.005 230);
+    --secondary: oklch(0.92 0.018 270);
+    --secondary-foreground: oklch(0.17 0.030 270);
+    --muted: oklch(0.93 0.014 270);
+    --muted-foreground: oklch(0.44 0.030 262);
+    --accent: oklch(0.55 0.18 202);
+    --accent-foreground: oklch(0.98 0.005 230);
+    --destructive: oklch(0.52 0.22 25);
     --destructive-foreground: oklch(0.98 0 0);
-    --border: oklch(0.86 0.032 225);
-    --input: oklch(0.94 0.018 225);
-    --ring: oklch(0.61 0.18 197);
+    --border: oklch(0.87 0.018 270);
+    --input: oklch(0.93 0.014 270);
+    --ring: oklch(0.55 0.22 272);
     --radius: 0.5rem;
-    --brand-cyan: oklch(0.72 0.16 197);
-    --brand-emerald: oklch(0.70 0.15 154);
-    --brand-amber: oklch(0.78 0.16 76);
-    --brand-ink: oklch(0.17 0.04 254);
-    --surface-raised: oklch(0.985 0.01 226);
-    --gradient-bg: radial-gradient(circle at 12% 8%, color-mix(in oklch, var(--brand-cyan) 22%, transparent) 0 24rem, transparent 35rem), radial-gradient(circle at 88% 0%, color-mix(in oklch, var(--primary) 18%, transparent) 0 28rem, transparent 40rem), linear-gradient(135deg, oklch(0.975 0.014 220) 0%, oklch(0.935 0.035 231) 54%, oklch(0.955 0.028 188) 100%);
-    --gradient-accent: linear-gradient(135deg, var(--primary) 0%, var(--brand-cyan) 58%, var(--brand-emerald) 100%);
-    --gradient-hero-panel: linear-gradient(145deg, color-mix(in oklch, var(--card) 94%, var(--brand-cyan)) 0%, color-mix(in oklch, var(--secondary) 74%, var(--primary)) 100%);
+    --brand-cyan: oklch(0.55 0.20 205);
+    --brand-violet: oklch(0.40 0.22 292);
+    --brand-emerald: oklch(0.60 0.18 154);
+    --brand-amber: oklch(0.68 0.18 76);
+    --brand-ink: oklch(0.10 0.024 270);
+    --surface-raised: oklch(0.995 0.005 270);
+    --gradient-bg: radial-gradient(circle at 12% 8%, color-mix(in oklch, var(--brand-cyan) 18%, transparent) 0 22rem, transparent 32rem), radial-gradient(circle at 88% 2%, color-mix(in oklch, var(--primary) 14%, transparent) 0 26rem, transparent 38rem), linear-gradient(135deg, oklch(0.978 0.006 270) 0%, oklch(0.945 0.018 275) 52%, oklch(0.960 0.012 285) 100%);
+    --gradient-accent: linear-gradient(135deg, var(--brand-cyan) 0%, var(--primary) 52%, var(--brand-violet) 100%);
+    --gradient-hero-panel: linear-gradient(145deg, color-mix(in oklch, var(--card) 94%, var(--brand-cyan)) 0%, color-mix(in oklch, var(--secondary) 75%, var(--primary)) 100%);
   }
 
   .dark {
-    --background: oklch(0.115 0.026 254);
-    --foreground: oklch(0.965 0.012 226);
-    --card: oklch(0.17 0.033 254);
-    --card-foreground: oklch(0.965 0.012 226);
-    --popover: oklch(0.19 0.034 254);
-    --popover-foreground: oklch(0.965 0.012 226);
-    --primary: oklch(0.71 0.19 258);
-    --primary-foreground: oklch(0.10 0.024 254);
-    --secondary: oklch(0.225 0.04 246);
-    --secondary-foreground: oklch(0.965 0.012 226);
-    --muted: oklch(0.205 0.034 250);
-    --muted-foreground: oklch(0.72 0.035 230);
-    --accent: oklch(0.72 0.15 190);
-    --accent-foreground: oklch(0.095 0.022 254);
-    --destructive: oklch(0.65 0.22 25);
+    /* Vesta — dark mode (primary brand identity, from logo) */
+    --background: oklch(0.07 0.018 270);
+    --foreground: oklch(0.93 0.010 235);
+    --card: oklch(0.10 0.022 270);
+    --card-foreground: oklch(0.93 0.010 235);
+    --popover: oklch(0.12 0.025 270);
+    --popover-foreground: oklch(0.93 0.010 235);
+    --primary: oklch(0.62 0.22 272);
+    --primary-foreground: oklch(0.98 0.005 230);
+    --secondary: oklch(0.15 0.028 270);
+    --secondary-foreground: oklch(0.83 0.014 235);
+    --muted: oklch(0.14 0.022 270);
+    --muted-foreground: oklch(0.70 0.018 252);
+    --accent: oklch(0.68 0.17 202);
+    --accent-foreground: oklch(0.07 0.018 270);
+    --destructive: oklch(0.60 0.22 25);
     --destructive-foreground: oklch(0.98 0 0);
-    --border: oklch(0.275 0.04 248);
-    --input: oklch(0.18 0.032 250);
-    --ring: oklch(0.72 0.15 190);
+    --border: oklch(0.20 0.025 270);
+    --input: oklch(0.14 0.022 270);
+    --ring: oklch(0.62 0.22 272);
     --radius: 0.5rem;
-    --brand-cyan: oklch(0.72 0.15 190);
-    --brand-emerald: oklch(0.72 0.15 154);
+    --brand-cyan: oklch(0.72 0.18 205);
+    --brand-violet: oklch(0.52 0.24 292);
+    --brand-emerald: oklch(0.70 0.15 154);
     --brand-amber: oklch(0.78 0.16 76);
-    --brand-ink: oklch(0.13 0.034 254);
-    --surface-raised: oklch(0.19 0.035 252);
-    --gradient-bg: radial-gradient(circle at 15% 8%, color-mix(in oklch, var(--brand-cyan) 16%, transparent) 0 26rem, transparent 38rem), radial-gradient(circle at 86% 4%, color-mix(in oklch, var(--primary) 18%, transparent) 0 30rem, transparent 42rem), linear-gradient(135deg, oklch(0.11 0.028 254) 0%, oklch(0.13 0.035 248) 58%, oklch(0.115 0.026 232) 100%);
-    --gradient-accent: linear-gradient(135deg, var(--primary) 0%, var(--brand-cyan) 58%, var(--brand-emerald) 100%);
-    --gradient-hero-panel: linear-gradient(145deg, color-mix(in oklch, var(--card) 88%, var(--brand-cyan)) 0%, color-mix(in oklch, var(--secondary) 70%, var(--primary)) 100%);
+    --brand-ink: oklch(0.08 0.020 270);
+    --surface-raised: oklch(0.12 0.024 270);
+    --gradient-bg: radial-gradient(circle at 15% 10%, color-mix(in oklch, var(--brand-cyan) 14%, transparent) 0 28rem, transparent 40rem), radial-gradient(circle at 85% 5%, color-mix(in oklch, var(--brand-violet) 12%, transparent) 0 30rem, transparent 44rem), linear-gradient(145deg, oklch(0.08 0.022 278) 0%, oklch(0.07 0.015 268) 55%, oklch(0.07 0.018 285) 100%);
+    --gradient-accent: linear-gradient(135deg, var(--brand-cyan) 0%, var(--primary) 52%, var(--brand-violet) 100%);
+    --gradient-hero-panel: linear-gradient(145deg, color-mix(in oklch, var(--card) 88%, var(--brand-cyan)) 0%, color-mix(in oklch, var(--secondary) 72%, var(--primary)) 100%);
   }
 }
 
@@ -83,6 +86,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-brand-cyan: var(--brand-cyan);
+  --color-brand-violet: var(--brand-violet);
   --color-brand-emerald: var(--brand-emerald);
   --color-brand-amber: var(--brand-amber);
   --color-brand-ink: var(--brand-ink);
@@ -98,7 +102,100 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
+
+/* ── Navbar scroll-glow ───────────────────────────────────────────────────── */
+[data-nav] {
+  transition:
+    box-shadow 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+[data-nav].nav-scrolled {
+  border-bottom-color: color-mix(in oklch, var(--primary) 30%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--primary) 12%, transparent),
+    0 4px 24px -4px color-mix(in oklch, var(--primary) 16%, transparent);
+}
+
+/* ── Step number color transition ────────────────────────────────────────── */
+[data-step-num] {
+  transition: color 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ── Feature spotlight — absolute stack, one visible at a time ──────── */
+[data-feature] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  pointer-events: none;
+}
+
+[data-feature][data-feature-state="active"] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+[data-feature][data-feature-state="done"] {
+  opacity: 0;
+  transform: translateY(-28px);
+}
+
+[data-feature-dot] {
+  transition:
+    width 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 0.4s ease;
+}
+[data-feature-dot].is-active-feature {
+  width: 2rem;
+  background-color: var(--primary);
+}
+
+/* ── Step spotlight — absolute stack, one visible at a time ──────────── */
+[data-step] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  pointer-events: none;
+}
+
+[data-step][data-state="active"] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+[data-step][data-state="done"] {
+  opacity: 0;
+  transform: translateY(-28px);
+}
+
+/* Progress dots */
+[data-step-dot] {
+  transition:
+    width 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 0.4s ease;
+}
+[data-step-dot].is-active {
+  width: 2rem;
+  background-color: var(--primary);
+}
+
 
 body {
   background: var(--background);
@@ -122,22 +219,22 @@ select {
   @keyframes fade-up {
     from {
       opacity: 0;
-      transform: translateY(14px);
+      transform: translateY(16px) scale(0.98);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
     }
   }
 
   @keyframes toast-in {
     from {
       opacity: 0;
-      transform: translateX(1.5rem);
+      transform: translateX(1.5rem) scale(0.96);
     }
     to {
       opacity: 1;
-      transform: translateX(0);
+      transform: translateX(0) scale(1);
     }
   }
 
@@ -148,19 +245,18 @@ select {
   }
 
   .animate-fade-up {
-    animation: fade-up 0.45s ease both;
+    animation: fade-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) both;
   }
 
-  /* Scroll-reveal: elements start invisible, play fade-up when .is-visible is added */
   .reveal {
     opacity: 0;
-    transform: translateY(18px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateY(20px) scale(0.99);
+    transition: opacity 0.55s cubic-bezier(0.23, 1, 0.32, 1), transform 0.55s cubic-bezier(0.23, 1, 0.32, 1);
   }
 
   .reveal.is-visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 
   .nav-link:active {
@@ -168,7 +264,6 @@ select {
   }
 }
 
-/* Fallback: no motion — just show everything */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-float,

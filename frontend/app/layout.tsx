@@ -25,8 +25,8 @@ const geistMono = Geist_Mono({
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata: Metadata = {
-  title: "Vestra",
-  description: "Solana-based token vesting and stream distribution",
+  title: "Vesta",
+  description: "Automated token vesting and distribution on Solana",
 };
 
 export default function RootLayout({
@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${manrope.variable} ${geistMono.variable} font-sans h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${manrope.variable} ${geistMono.variable} dark font-sans h-full antialiased`}
     >
       <head>
         {gaMeasurementId ? (

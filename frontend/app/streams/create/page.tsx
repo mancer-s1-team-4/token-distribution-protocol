@@ -595,7 +595,7 @@ export default function CreateStreamPage() {
         <div className="mb-5 rounded-lg border border-primary/25 bg-primary/10 p-4 text-sm backdrop-blur">
           <p className="font-bold text-foreground">Demo mode</p>
           <p className="mt-1 text-muted-foreground">
-            This form uses Vestra&apos;s configured devnet wallet. Recipient and mock token are filled automatically so you can test without connecting a wallet.
+            This form uses Vesta&apos;s configured devnet wallet. Recipient and mock token are filled automatically so you can test without connecting a wallet.
           </p>
           {demoPublicKey ? (
             <p className="mt-2 break-all font-mono text-xs text-foreground">

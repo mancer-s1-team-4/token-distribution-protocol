@@ -11,6 +11,7 @@ AGENTS.md
 CLAUDE.md
 GEMINI.md
 skills-lock.json
+.impecabble/
 
 # Local environment
 .env

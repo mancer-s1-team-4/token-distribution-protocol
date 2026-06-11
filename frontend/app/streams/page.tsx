@@ -249,7 +249,7 @@ export default function StreamsPage() {
           <div>
             <p className="font-bold text-foreground">Demo mode</p>
             <p className="mt-1 text-muted-foreground">
-              Transactions are signed by Vestra&apos;s configured devnet demo wallet.
+              Transactions are signed by Vesta&apos;s configured devnet demo wallet.
             </p>
           </div>
           <button
@@ -270,7 +270,7 @@ export default function StreamsPage() {
               <path d="M2 10h20" />
             </svg>
           </div>
-          <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Try Vestra</h2>
+          <h2 className="font-display text-xl font-bold tracking-tight text-foreground">Try Vesta</h2>
           <p className="mt-2 max-w-sm text-sm text-muted-foreground">
             Create and manage a devnet agreement without connecting a wallet, or connect your own wallet to test the real user flow.
           </p>
