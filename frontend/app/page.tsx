@@ -7,7 +7,7 @@ const metrics = [
   { label: "Next release", value: "T-18h", sub: "milestone gate" },
 ];
 
-const problemCards = [
+const problems = [
   {
     title: "Manual payouts create drift",
     body: "One spreadsheet edit, missed approval, or copied address can break a release schedule.",
@@ -19,8 +19,8 @@ const problemCards = [
     icon: DocumentIcon,
   },
   {
-    title: "Communities cannot inspect status",
-    body: "Recipients need to see what is locked, released, claimable, and completed without asking ops.",
+    title: "Recipients cannot inspect status",
+    body: "Without a live view, every status check becomes a request to ops.",
     icon: EyeIcon,
   },
 ];
@@ -28,42 +28,41 @@ const problemCards = [
 const features = [
   {
     title: "Cliff vesting",
-    body: "Keep allocations locked until a specific date, then release tokens on the schedule you configured.",
+    body: "Keep allocations locked until a specific date, then release on the schedule you configured.",
     note: "Investor and team unlocks",
     icon: LockIcon,
+    accent: false,
   },
   {
     title: "Linear streaming",
-    body: "Release tokens continuously over time with a live claimable balance for each recipient.",
+    body: "Release tokens continuously with a live claimable balance for each recipient.",
     note: "Payroll, grants, contributors",
     icon: StreamIcon,
+    accent: false,
   },
   {
     title: "Milestone releases",
-    body: "Tie token releases to verified execution so distribution follows delivery, not promises.",
+    body: "Tie token releases to verified execution so distribution follows delivery. A designated verifier marks each milestone complete before the allocation unlocks. No promises, no manual overrides.",
     note: "Roadmaps and bounties",
     icon: CheckIcon,
+    accent: true,
   },
 ];
 
 const steps = [
   {
-    number: "01",
     title: "Create the agreement",
     body: "Choose the recipient, token, schedule type, start date, cliff, and cancellation rules.",
   },
   {
-    number: "02",
     title: "Fund escrow",
     body: "Tokens move into a program-owned account where neither side can bypass the configured rules.",
   },
   {
-    number: "03",
     title: "Track release state",
-    body: "Vestra calculates unlocked, claimed, and claimable amounts from live account data.",
+    body: "Vesta calculates unlocked, claimed, and claimable amounts from live account data.",
   },
   {
-    number: "04",
     title: "Claim or cancel",
     body: "Recipients claim vested tokens. Creators can cancel only when the agreement allows it.",
   },
@@ -92,105 +91,144 @@ export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-brand-bg text-foreground">
       <ScrollReveal />
-      <header className="sticky top-0 z-20 border-b border-border/80 bg-background/82 backdrop-blur-xl">
+
+      {/* Nav */}
+      <header className="sticky top-0 z-20 border-b border-border/60 bg-background/80 backdrop-blur-xl">
         <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="inline-flex min-h-10 items-center gap-2 rounded-md font-display text-lg font-bold tracking-tight text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="inline-flex min-h-10 items-center gap-2.5 focus-visible:rounded focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-accent text-primary-foreground">
+            <span className="flex h-8 w-8 items-center justify-center rounded-md border border-primary/35 bg-card text-primary ring-1 ring-inset ring-primary/10">
               <GridIcon />
             </span>
-            Vestra
+            <span className="font-display text-lg font-bold tracking-tight text-foreground">
+              Vesta
+            </span>
           </Link>
-          <div className="hidden items-center gap-2 text-sm font-semibold text-muted-foreground md:flex">
-            <a href="#features" className="nav-link rounded-md px-3 py-2 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Features</a>
-            <a href="#how-it-works" className="nav-link rounded-md px-3 py-2 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Workflow</a>
-            <a href="#built-for" className="nav-link rounded-md px-3 py-2 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">Teams</a>
+
+          <div className="hidden items-center gap-1 text-sm font-semibold text-muted-foreground md:flex">
+            <a
+              href="#features"
+              className="nav-link rounded-md px-3 py-2 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              Features
+            </a>
+            <a
+              href="#how-it-works"
+              className="nav-link rounded-md px-3 py-2 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              Workflow
+            </a>
+            <a
+              href="#built-for"
+              className="nav-link rounded-md px-3 py-2 transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              Teams
+            </a>
           </div>
+
           <Link
             href="/streams"
-            className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/88 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="inline-flex min-h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:brightness-110 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Open app
           </Link>
         </nav>
       </header>
 
+      {/* Hero */}
       <section className="relative px-5 pb-20 pt-14 sm:px-6 md:pt-20 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-end">
-          <div className="max-w-3xl">
-            <div className="animate-fade-up inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-card/72 px-3 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground backdrop-blur">
-              <PulseIcon />
-              Solana distribution operations
-            </div>
-            <h1 className="animate-fade-up mt-7 max-w-4xl font-display text-5xl font-bold leading-[0.96] tracking-tight text-foreground sm:text-6xl lg:text-7xl" style={{ animationDelay: "0.05s" }}>
+        <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+          <div>
+            <h1
+              className="animate-fade-up max-w-2xl font-display text-5xl font-bold leading-[0.96] tracking-tight text-foreground sm:text-6xl lg:text-7xl"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
               Token releases with rules operators can trust.
             </h1>
-            <p className="animate-fade-up mt-6 max-w-2xl text-base leading-8 text-muted-foreground sm:text-lg" style={{ animationDelay: "0.1s" }}>
-              Vestra turns vesting schedules, streaming payouts, and milestone releases into transparent agreements with live balances and predictable execution.
+            <p
+              className="animate-fade-up mt-6 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg"
+              style={{ animationDelay: "0.07s" }}
+            >
+              Vesta turns vesting schedules, payouts, and milestone releases into transparent on-chain agreements with live balances.
             </p>
-            <div className="animate-fade-up mt-9 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "0.15s" }}>
+            <div
+              className="animate-fade-up mt-9 flex flex-col gap-3 sm:flex-row"
+              style={{ animationDelay: "0.13s" }}
+            >
               <Link
                 href="/streams"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/88 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-bold text-primary-foreground transition-colors hover:brightness-110 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 Launch dashboard
                 <ArrowIcon />
               </Link>
               <a
                 href="#how-it-works"
-                className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-card/72 px-6 text-sm font-bold text-foreground backdrop-blur transition-colors hover:border-primary/50 hover:bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-card/60 px-6 text-sm font-bold text-foreground backdrop-blur transition-colors hover:border-primary/40 hover:bg-card active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                View workflow
+                How it works
               </a>
             </div>
           </div>
 
-          <div className="reveal relative">
-            <div className="rounded-lg border border-border bg-hero-panel p-4 shadow-sm">
-              <div className="rounded-md border border-border/80 bg-background/78 p-4 backdrop-blur">
+          {/* Hero visual */}
+          <div className="reveal">
+            <div className="rounded-xl border border-border/80 bg-hero-panel p-4">
+              <div className="rounded-lg border border-border/70 bg-background/70 p-5 backdrop-blur">
                 <div className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">Distribution plan</p>
-                    <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-foreground">Ecosystem grant stream</h2>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">
+                      Distribution plan
+                    </p>
+                    <h2 className="mt-2 font-display text-xl font-bold tracking-tight text-foreground">
+                      Ecosystem grant stream
+                    </h2>
                   </div>
-                  <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-brand-emerald/18 px-3 text-xs font-bold text-foreground">
-                    <CheckIcon />
+                  <span className="inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-full bg-brand-emerald/16 px-3 text-xs font-bold text-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-emerald" />
                     Active
                   </span>
                 </div>
 
-                <div className="grid gap-3 py-5 sm:grid-cols-3">
+                <div className="grid gap-4 py-5 sm:grid-cols-3">
                   {metrics.map((metric) => (
                     <div key={metric.label} className="border-l border-border pl-3">
                       <p className="text-xs font-semibold text-muted-foreground">{metric.label}</p>
-                      <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">{metric.value}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{metric.sub}</p>
+                      <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground">
+                        {metric.value}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{metric.sub}</p>
                     </div>
                   ))}
                 </div>
 
-                <div className="space-y-3 border-t border-border pt-5">
-                  <div className="flex items-center justify-between text-xs font-bold text-muted-foreground">
+                <div className="space-y-2 border-t border-border pt-4">
+                  <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
                     <span>Locked</span>
                     <span>Claimable</span>
                     <span>Released</span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-secondary">
+                  <div className="h-2 overflow-hidden rounded-full bg-secondary">
                     <div className="h-full w-[64%] rounded-full bg-brand-accent" />
                   </div>
                 </div>
 
-                <div className="mt-6 grid gap-3">
+                <div className="mt-5 grid gap-2">
                   {[
                     ["Recipient", "7xKX...gAsU"],
                     ["Schedule", "Cliff + linear"],
                     ["Next action", "Milestone approval"],
                   ].map(([label, value]) => (
-                    <div key={label} className="flex items-center justify-between gap-4 rounded-md border border-border bg-card/72 px-3 py-3">
-                      <span className="text-sm text-muted-foreground">{label}</span>
-                      <span className="text-right font-mono text-sm font-bold tabular-nums text-foreground">{value}</span>
+                    <div
+                      key={label}
+                      className="flex items-center justify-between gap-4 rounded-md border border-border/80 bg-card/60 px-3 py-2.5"
+                    >
+                      <span className="text-xs text-muted-foreground">{label}</span>
+                      <span className="font-mono text-xs font-bold tabular-nums text-foreground">
+                        {value}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -200,99 +238,161 @@ export default function Home() {
         </div>
       </section>
 
-      <AnimatedSection
-        eyebrow="The risk"
-        title="Token distribution breaks when execution lives outside the agreement."
-        body="Vestra removes the gap between what your team promised and what actually happens on-chain."
-      >
-        <div className="grid gap-4 md:grid-cols-3">
-          {problemCards.map((card, i) => (
-            <FeatureCard key={card.title} {...card} delay={i} />
-          ))}
-        </div>
-      </AnimatedSection>
+      {/* Problem */}
+      <section className="border-t border-border/60 px-5 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.88fr_1.12fr]">
+          <div className="reveal">
+            <h2
+              className="max-w-sm font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              Token distribution breaks when execution lives outside the agreement.
+            </h2>
+            <p className="mt-5 max-w-sm text-sm leading-7 text-muted-foreground">
+              Vesta removes the gap between what your team promised and what actually happens on-chain.
+            </p>
+          </div>
 
-      <AnimatedSection
-        id="features"
-        eyebrow="Core controls"
-        title="One interface for the release patterns teams already use."
-        cta={{ label: "Explore dashboard", href: "/streams" }}
-      >
-        <div className="grid gap-4 md:grid-cols-3">
-          {features.map((feature, i) => (
-            <FeatureCard key={feature.title} {...feature} delay={i} note={feature.note} />
-          ))}
-        </div>
-      </AnimatedSection>
-
-      <AnimatedSection
-        id="how-it-works"
-        eyebrow="Workflow"
-        title="Configure once. Track every state change from the dashboard."
-      >
-        <div className="relative">
-          <div className="absolute left-[1.375rem] top-6 hidden h-[calc(100%-3rem)] w-px bg-border md:block" aria-hidden="true" />
-          <div className="grid gap-0">
-            {steps.map((step, i) => (
-              <div
-                key={step.number}
-                className="reveal relative grid gap-4 py-5 md:grid-cols-[3rem_1fr] md:items-start"
-                style={{ transitionDelay: `${i * 0.08}s` }}
-              >
-                <div className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card font-mono text-sm font-bold text-primary">
-                  {step.number}
+          <div className="reveal space-y-0 divide-y divide-border/60" style={{ transitionDelay: "0.08s" }}>
+            {problems.map((problem) => (
+              <article key={problem.title} className="flex gap-4 py-5">
+                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-secondary text-muted-foreground">
+                  <problem.icon />
                 </div>
-                <div className={i < steps.length - 1 ? "border-b border-border pb-5 md:border-none" : ""}>
-                  <h3 className="font-display text-lg font-bold tracking-tight text-foreground">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.body}</p>
+                <div>
+                  <h3 className="font-display text-base font-bold tracking-tight text-foreground">
+                    {problem.title}
+                  </h3>
+                  <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{problem.body}</p>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>
-      </AnimatedSection>
+      </section>
 
-      <AnimatedSection
-        id="built-for"
-        eyebrow="Built for"
-        title="Designed for teams that treat token operations like finance ops."
-      >
-        <div className="grid gap-4 md:grid-cols-2">
-          {audiences.map((audience, i) => (
-            <article
-              key={audience.title}
-              className="reveal rounded-lg border border-border bg-card/82 p-5 backdrop-blur transition-colors hover:border-primary/45"
-              style={{ transitionDelay: `${i * 0.06}s` }}
+      {/* Features — 2+1 bento */}
+      <section id="features" className="border-t border-border/60 px-5 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="reveal flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <h2
+              className="max-w-xl font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+              style={{ textWrap: "balance" } as React.CSSProperties}
             >
-              <h3 className="font-display text-xl font-bold tracking-tight text-card-foreground">{audience.title}</h3>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">{audience.body}</p>
-            </article>
-          ))}
-        </div>
-      </AnimatedSection>
+              One interface for the release patterns your team uses.
+            </h2>
+          </div>
 
+          <div className="reveal mt-8 grid gap-4" style={{ transitionDelay: "0.08s" }}>
+            <div className="grid gap-4 md:grid-cols-2">
+              {features.slice(0, 2).map((feature) => (
+                <FeatureCard key={feature.title} {...feature} />
+              ))}
+            </div>
+            <FeatureCard {...features[2]} wide />
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section
+        id="how-it-works"
+        className="border-t border-border/60 px-5 py-16 sm:px-6 lg:px-8"
+      >
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.88fr_1.12fr]">
+          <div className="reveal">
+            <h2
+              className="max-w-sm font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              Configure once. Track every state change from the dashboard.
+            </h2>
+          </div>
+
+          <div className="reveal relative" style={{ transitionDelay: "0.08s" }}>
+            <div
+              className="absolute left-[1.375rem] top-6 hidden h-[calc(100%-3rem)] w-px bg-border/80 md:block"
+              aria-hidden="true"
+            />
+            <div className="grid gap-0">
+              {steps.map((step, i) => (
+                <div
+                  key={step.title}
+                  className="relative grid gap-4 py-5 md:grid-cols-[3rem_1fr] md:items-start"
+                >
+                  <div className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-border bg-card font-mono text-sm font-bold text-primary">
+                    {i + 1}
+                  </div>
+                  <div
+                    className={
+                      i < steps.length - 1 ? "border-b border-border/60 pb-5 md:border-none" : ""
+                    }
+                  >
+                    <h3 className="font-display text-base font-bold tracking-tight text-foreground">
+                      {step.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Built for */}
+      <section id="built-for" className="border-t border-border/60 px-5 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.88fr_1.12fr]">
+          <div className="reveal">
+            <h2
+              className="max-w-sm font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              Built for teams that treat token operations like finance ops.
+            </h2>
+          </div>
+
+          <div
+            className="reveal grid gap-4 sm:grid-cols-2"
+            style={{ transitionDelay: "0.08s" }}
+          >
+            {audiences.map((audience) => (
+              <article
+                key={audience.title}
+                className="rounded-lg border border-border bg-card/70 p-5 backdrop-blur transition-colors hover:border-primary/35"
+              >
+                <h3 className="font-display text-lg font-bold tracking-tight text-card-foreground">
+                  {audience.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">{audience.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA band */}
       <section className="px-5 py-16 sm:px-6 lg:px-8">
-        <div className="reveal mx-auto max-w-7xl overflow-hidden rounded-lg border border-border bg-brand-accent p-8 text-primary-foreground sm:p-10">
+        <div className="reveal mx-auto max-w-7xl overflow-hidden rounded-xl border border-primary/30 bg-brand-accent p-8 sm:p-10">
           <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary-foreground/78">Start operating from live rules</p>
-              <h2 className="mt-4 max-w-3xl font-display text-3xl font-bold tracking-tight sm:text-5xl">
+              <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
                 Replace manual releases before the next payout cycle.
               </h2>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-primary-foreground/82">
+              <p className="mt-5 max-w-xl text-base leading-7 text-primary-foreground/82">
                 Create a stream, fund escrow, and give recipients a dashboard that shows exactly what can be claimed.
               </p>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col">
               <Link
                 href="/streams"
-                className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary-foreground px-6 text-sm font-bold text-primary transition-colors hover:bg-primary-foreground/90 focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+                className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary-foreground px-6 text-sm font-bold text-primary transition-colors hover:bg-primary-foreground/90 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
               >
                 Open app
               </Link>
               <a
                 href="#features"
-                className="inline-flex min-h-12 items-center justify-center rounded-md border border-primary-foreground/45 px-6 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary-foreground/12 focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
+                className="inline-flex min-h-12 items-center justify-center rounded-md border border-primary-foreground/40 px-6 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary-foreground/10 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary-foreground"
               >
                 Review features
               </a>
@@ -301,54 +401,12 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Footer */}
       <footer className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-8 text-sm text-muted-foreground sm:px-6 lg:px-8">
-        <p className="font-display text-lg font-bold text-foreground">Vestra</p>
+        <p className="font-display text-lg font-bold text-foreground">Vesta</p>
         <p>Automated token distribution for teams on Solana.</p>
       </footer>
     </main>
-  );
-}
-
-function AnimatedSection({
-  id,
-  eyebrow,
-  title,
-  body,
-  cta,
-  children,
-}: {
-  id?: string;
-  eyebrow: string;
-  title: string;
-  body?: string;
-  cta?: { label: string; href: string };
-  children: React.ReactNode;
-}) {
-  return (
-    <section id={id} className="border-t border-border/80 px-5 py-16 sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.88fr_1.12fr]">
-        <div className="reveal">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
-            {eyebrow}
-          </p>
-          <h2 className="mt-4 max-w-2xl font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            {title}
-          </h2>
-          {body ? (
-            <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">{body}</p>
-          ) : null}
-          {cta ? (
-            <Link
-              href={cta.href}
-              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/88 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              {cta.label}
-            </Link>
-          ) : null}
-        </div>
-        <div className="reveal" style={{ transitionDelay: "0.08s" }}>{children}</div>
-      </div>
-    </section>
   );
 }
 
@@ -357,29 +415,49 @@ function FeatureCard({
   body,
   note,
   icon: Icon,
-  delay,
+  accent,
+  wide,
 }: {
   title: string;
   body: string;
   note?: string;
   icon: IconComponent;
-  delay: number;
+  accent: boolean;
+  wide?: boolean;
 }) {
   return (
     <article
-      className="reveal rounded-lg border border-border bg-card/82 p-5 backdrop-blur transition-colors hover:border-primary/45"
-      style={{ transitionDelay: `${delay * 0.06}s` }}
+      className={[
+        "rounded-xl border p-6 backdrop-blur transition-colors",
+        wide
+          ? "flex flex-col gap-6 sm:flex-row sm:items-start border-primary/30 bg-primary/8"
+          : "border-border bg-card/70 hover:border-primary/35",
+      ].join(" ")}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-md border border-border bg-secondary text-primary">
+      <div
+        className={[
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-md border",
+          accent
+            ? "border-primary/40 bg-primary/16 text-primary"
+            : "border-border bg-secondary text-muted-foreground",
+        ].join(" ")}
+      >
         <Icon />
       </div>
-      {note ? (
-        <p className="mt-5 text-xs font-bold uppercase tracking-[0.14em] text-primary">
-          {note}
-        </p>
-      ) : null}
-      <h3 className="mt-4 font-display text-xl font-bold tracking-tight text-card-foreground">{title}</h3>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">{body}</p>
+      <div>
+        {note ? (
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">{note}</p>
+        ) : null}
+        <h3
+          className={[
+            "font-display font-bold tracking-tight text-card-foreground",
+            note ? "mt-3 text-xl" : "mt-4 text-xl",
+          ].join(" ")}
+        >
+          {title}
+        </h3>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{body}</p>
+      </div>
     </article>
   );
 }
@@ -412,14 +490,6 @@ function GridIcon() {
       <rect x="14" y="4" width="6" height="6" rx="1.2" />
       <rect x="4" y="14" width="6" height="6" rx="1.2" />
       <rect x="14" y="14" width="6" height="6" rx="1.2" />
-    </SvgIcon>
-  );
-}
-
-function PulseIcon() {
-  return (
-    <SvgIcon>
-      <path d="M3 12h4l2-5 4 10 2-5h6" />
     </SvgIcon>
   );
 }
