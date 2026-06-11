@@ -102,6 +102,98 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+/* ── Navbar scroll-glow ───────────────────────────────────────────────────── */
+[data-nav] {
+  transition:
+    box-shadow 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+[data-nav].nav-scrolled {
+  border-bottom-color: color-mix(in oklch, var(--primary) 30%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--primary) 12%, transparent),
+    0 4px 24px -4px color-mix(in oklch, var(--primary) 16%, transparent);
+}
+
+/* ── Step number color transition ────────────────────────────────────────── */
+[data-step-num] {
+  transition: color 0.55s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ── Feature spotlight — absolute stack, one visible at a time ──────── */
+[data-feature] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  pointer-events: none;
+}
+
+[data-feature][data-feature-state="active"] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+[data-feature][data-feature-state="done"] {
+  opacity: 0;
+  transform: translateY(-28px);
+}
+
+[data-feature-dot] {
+  transition:
+    width 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 0.4s ease;
+}
+[data-feature-dot].is-active-feature {
+  width: 2rem;
+  background-color: var(--primary);
+}
+
+/* ── Step spotlight — absolute stack, one visible at a time ──────────── */
+[data-step] {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.5s cubic-bezier(0.23, 1, 0.32, 1),
+    transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  pointer-events: none;
+}
+
+[data-step][data-state="active"] {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+[data-step][data-state="done"] {
+  opacity: 0;
+  transform: translateY(-28px);
+}
+
+/* Progress dots */
+[data-step-dot] {
+  transition:
+    width 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 0.4s ease;
+}
+[data-step-dot].is-active {
+  width: 2rem;
+  background-color: var(--primary);
 }
 
 
