@@ -184,6 +184,7 @@ export function LandingScroll() {
 
             applyFeature(0);
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ScrollTrigger.create({
               trigger: featuresSection,
               pin: true,
@@ -191,14 +192,14 @@ export function LandingScroll() {
               start: "top top",
               end: `+=${featureItems.length * 600}`,
               scrub: true,
-              onUpdate: (self) => {
+              onUpdate: (self: { progress: number }) => {
                 const active = Math.min(
                   Math.floor(self.progress * featureItems.length),
                   featureItems.length - 1,
                 );
                 applyFeature(active);
               },
-            });
+            } as any);
           }
 
           // ── Pinned "How it works" — step spotlight ────────────────────────
@@ -235,6 +236,7 @@ export function LandingScroll() {
             // Set initial state before pin starts
             applyStep(0);
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ScrollTrigger.create({
               trigger: stepsSection,
               pin: true,
@@ -242,14 +244,14 @@ export function LandingScroll() {
               start: "top top",
               end: `+=${stepItems.length * 260}`,
               scrub: true,
-              onUpdate: (self) => {
+              onUpdate: (self: { progress: number }) => {
                 const active = Math.min(
                   Math.floor(self.progress * stepItems.length),
                   stepItems.length - 1,
                 );
                 applyStep(active);
               },
-            });
+            } as any);
           }
 
           // ── Clip-path wipe for section headings ───────────────────────────
