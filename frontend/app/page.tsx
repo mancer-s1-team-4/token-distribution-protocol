@@ -177,7 +177,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div>
+          <div className="hidden lg:block">
             <div data-parallax="hero-panel" className="rounded-xl border border-border/80 bg-hero-panel p-4" style={{ willChange: "transform" }}>
               <div className="rounded-lg border border-border/70 bg-background/70 p-5 backdrop-blur">
                 <div className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
