@@ -184,22 +184,25 @@ export function LandingScroll() {
 
             applyFeature(0);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ScrollTrigger.create({
-              trigger: featuresSection,
-              pin: true,
-              zIndexBoost: false,
-              start: "top top",
-              end: `+=${featureItems.length * 600}`,
-              scrub: true,
-              onUpdate: (self: { progress: number }) => {
-                const active = Math.min(
-                  Math.floor(self.progress * featureItems.length),
-                  featureItems.length - 1,
-                );
-                applyFeature(active);
-              },
-            } as any);
+            ScrollTrigger.create(
+              Object.assign(
+                {
+                  trigger: featuresSection,
+                  pin: true,
+                  start: "top top",
+                  end: `+=${featureItems.length * 600}`,
+                  scrub: true,
+                  onUpdate: (self: { progress: number }) => {
+                    const active = Math.min(
+                      Math.floor(self.progress * featureItems.length),
+                      featureItems.length - 1,
+                    );
+                    applyFeature(active);
+                  },
+                },
+                { zIndexBoost: false },
+              ),
+            );
           }
 
           // ── Pinned "How it works" — step spotlight ────────────────────────
@@ -236,22 +239,25 @@ export function LandingScroll() {
             // Set initial state before pin starts
             applyStep(0);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ScrollTrigger.create({
-              trigger: stepsSection,
-              pin: true,
-              zIndexBoost: false,
-              start: "top top",
-              end: `+=${stepItems.length * 260}`,
-              scrub: true,
-              onUpdate: (self: { progress: number }) => {
-                const active = Math.min(
-                  Math.floor(self.progress * stepItems.length),
-                  stepItems.length - 1,
-                );
-                applyStep(active);
-              },
-            } as any);
+            ScrollTrigger.create(
+              Object.assign(
+                {
+                  trigger: stepsSection,
+                  pin: true,
+                  start: "top top",
+                  end: `+=${stepItems.length * 260}`,
+                  scrub: true,
+                  onUpdate: (self: { progress: number }) => {
+                    const active = Math.min(
+                      Math.floor(self.progress * stepItems.length),
+                      stepItems.length - 1,
+                    );
+                    applyStep(active);
+                  },
+                },
+                { zIndexBoost: false },
+              ),
+            );
           }
 
           // ── Clip-path wipe for section headings ───────────────────────────

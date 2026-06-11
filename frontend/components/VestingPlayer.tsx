@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { Player } from '@remotion/player';
 import { VestingAnimation } from './VestingAnimation';
 
@@ -11,7 +11,7 @@ const COMP_H = 360;
 
 export function VestingPlayer() {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { startTransition(() => setMounted(true)); }, []);
 
   if (!mounted) {
     return (
