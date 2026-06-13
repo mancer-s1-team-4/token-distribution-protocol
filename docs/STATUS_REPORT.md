@@ -39,7 +39,7 @@ The product is ready for controlled user testing and BD demos. It is not yet rea
 
 ### Infrastructure
 
-- Program deployed to devnet with a dedicated non-commited deploy wallet
+- Program deployed to devnet with a dedicated non-committed deploy wallet
 - IDL is synced to the frontend on every deploy via `scripts/sync-idl-to-frontend.sh`
 - Google Analytics is wired up for usage tracking
 

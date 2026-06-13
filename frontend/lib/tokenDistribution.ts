@@ -167,9 +167,12 @@ export async function createStreamTx(
   const creatorBalance = await connection.getTokenAccountBalance(creatorTokenAccount);
   const creatorBalanceBN = new anchor.BN(creatorBalance.value.amount);
   if (creatorBalanceBN.lt(amount)) {
+    // Use a prefix that does not match the /insufficient/i fallback in friendlyError(),
+    // so the actual base-unit amounts reach the user rather than the generic message.
     throw new Error(
-      `INSUFFICIENT_TOKEN_BALANCE: Your token account holds ${creatorBalance.value.amount} tokens ` +
-      `but this stream requires ${amount.toString()}.`
+      `LOW_TOKEN_BALANCE: Not enough tokens to fund this stream. ` +
+      `Your account holds ${creatorBalance.value.amount} base units; ` +
+      `this stream requires ${amount.toString()} base units.`
     );
   }
 
