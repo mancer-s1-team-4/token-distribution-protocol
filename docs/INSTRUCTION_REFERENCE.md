@@ -21,15 +21,11 @@ This document covers every instruction exposed by the Vestra token distribution 
 
 ## initialize
 
-Creates the protocol-state PDA. This is a scaffold instruction inherited from the project template. It is required once per deployment and does nothing beyond persisting the authority pubkey on-chain.
+A scaffold instruction kept from the project template. It takes no accounts, writes no state, and can be called by anyone. Its only effect is logging the program ID and emitting an `Initialized` event.
 
 ### Accounts
 
-| Name | Type | Mut | Signer | Description |
-|------|------|-----|--------|-------------|
-| `authority` | Signer | yes | yes | Wallet that pays rent and becomes the stored authority |
-| `protocol_state` | PDA | yes | no | Seeds: `["token-distribution-protocol"]` |
-| `system_program` | Program | no | no | Required for account creation |
+None.
 
 ### Parameters
 
@@ -37,18 +33,17 @@ None.
 
 ### Behavior
 
-Allocates the `ProtocolState` account at the deterministic PDA and stores `authority`. Emits an `Initialized` event with the program ID.
+Logs the program ID via `msg!` and emits an `Initialized` event containing the program ID. No accounts are created or modified.
 
 ### Errors
 
-This instruction performs no application-level validation and will only fail if the PDA already exists (Anchor rejects re-initialization by default) or if `authority` has insufficient lamports for rent.
+None. This instruction has no validation and cannot fail under normal circumstances.
 
 ### Example
 
 ```typescript
 await program.methods
   .initialize()
-  .accounts({ authority: wallet.publicKey })
   .rpc();
 ```
 
@@ -306,7 +301,9 @@ Appends a new milestone entry to a milestone-type stream. Only the stream creato
 | Name | Type | Mut | Signer | Description |
 |------|------|-----|--------|-------------|
 | `creator` | Signer | yes | yes | Must match `stream_data.creator` |
+| `recipient` | UncheckedAccount | no | no | Needed for PDA seed derivation |
 | `stream_data` | PDA | yes | no | Must be type 2 (Milestone) and not cancelled |
+| `system_program` | Program | no | no | Required by Anchor |
 
 ### Parameters
 
@@ -337,6 +334,7 @@ Appends a new milestone entry to a milestone-type stream. Only the stream creato
 ### Example
 
 ```typescript
+import * as anchor from "@coral-xyz/anchor";
 import * as crypto from "crypto";
 
 const description = "Deliver MVP by Q2";
@@ -352,7 +350,9 @@ await program.methods
   )
   .accounts({
     creator: creator.publicKey,
+    recipient: recipient.publicKey,
     streamData: streamDataPda,
+    systemProgram: anchor.web3.SystemProgram.programId,
   })
   .signers([creator])
   .rpc();
@@ -368,8 +368,11 @@ Marks a single milestone as complete. Once verified, that milestone's token amou
 
 | Name | Type | Mut | Signer | Description |
 |------|------|-----|--------|-------------|
-| `verifier` | Signer | no | yes | Must match the `verifier` field stored on the target milestone |
+| `verifier` | Signer | yes | yes | Must match the `verifier` field stored on the target milestone |
+| `creator` | UncheckedAccount | no | no | Needed for PDA seed derivation |
+| `recipient` | UncheckedAccount | no | no | Needed for PDA seed derivation |
 | `stream_data` | PDA | yes | no | The stream's vesting record |
+| `system_program` | Program | no | no | Required by Anchor |
 
 ### Parameters
 
@@ -398,7 +401,10 @@ await program.methods
   .verifyMilestone(0) // verify the first milestone (index 0)
   .accounts({
     verifier: verifier.publicKey,
+    creator: creator.publicKey,
+    recipient: recipient.publicKey,
     streamData: streamDataPda,
+    systemProgram: anchor.web3.SystemProgram.programId,
   })
   .signers([verifier])
   .rpc();
@@ -414,9 +420,9 @@ A devnet-only faucet that mints test tokens to the caller's wallet. Uses a progr
 
 | Name | Type | Mut | Signer | Description |
 |------|------|-----|--------|-------------|
-| `authority` | Signer | yes | yes | Recipient of the minted tokens; pays rent |
+| `minter` | Signer | yes | yes | Recipient of the minted tokens; pays rent |
 | `mock_mint` | PDA (init_if_needed) | yes | no | Seeds: `["mock_mint"]`; program-controlled |
-| `authority_token_account` | ATA (init_if_needed) | yes | no | Destination for minted tokens |
+| `minter_token_account` | ATA (init_if_needed) | yes | no | Destination for minted tokens |
 | `token_program` | Program | no | no | |
 | `associated_token_program` | Program | no | no | |
 | `system_program` | Program | no | no | |
@@ -425,12 +431,13 @@ A devnet-only faucet that mints test tokens to the caller's wallet. Uses a progr
 
 | Name | Type | Description |
 |------|------|-------------|
-| `amount` | `u64` | Number of tokens to mint. Maximum is `1,000,000`. |
+| `amount` | `u64` | Number of tokens to mint. Must be greater than zero. Maximum is `1,000,000`. |
 
 ### Validation and Errors
 
 | Condition | Error Code | Error Name |
 |-----------|-----------|------------|
+| `amount == 0` | 6000 | `InvalidAmount` |
 | `amount > 1_000_000` | 6019 | `MockTokenMintTooLarge` |
 
 ### Example
@@ -441,7 +448,7 @@ const [mockMintPda] = PublicKey.findProgramAddressSync(
   program.programId
 );
 
-const authorityAta = await getAssociatedTokenAddress(
+const minterAta = await getAssociatedTokenAddress(
   mockMintPda,
   wallet.publicKey
 );
@@ -449,9 +456,9 @@ const authorityAta = await getAssociatedTokenAddress(
 await program.methods
   .mintMockTokens(new anchor.BN(500_000))
   .accounts({
-    authority: wallet.publicKey,
+    minter: wallet.publicKey,
     mockMint: mockMintPda,
-    authorityTokenAccount: authorityAta,
+    minterTokenAccount: minterAta,
   })
   .rpc();
 ```
@@ -464,7 +471,7 @@ All errors are defined in `contracts/programs/token-distribution-protocol/src/er
 
 | Code | Name | Message | Raised By |
 |------|------|---------|-----------|
-| 6000 | `InvalidAmount` | amount must be greater than zero | `create_stream` |
+| 6000 | `InvalidAmount` | amount must be greater than zero | `create_stream`, `mint_mock_tokens` |
 | 6001 | `InvalidTimeRange` | end_time must be after start_time | `create_stream` |
 | 6002 | `InvalidCliffTime` | cliff_time must be within [start_time, end_time] | `create_stream` |
 | 6003 | `InsufficientFunds` | creator token balance is insufficient | `create_stream` |

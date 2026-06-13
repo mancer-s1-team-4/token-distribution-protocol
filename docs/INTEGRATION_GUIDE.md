@@ -78,7 +78,7 @@ async function getMockTokens(amount: number): Promise<PublicKey> {
   );
 
   // Get or create your token account for this mint
-  const authorityAta = await getAssociatedTokenAddress(
+  const minterAta = await getAssociatedTokenAddress(
     mockMintPda,
     walletKeypair.publicKey
   );
@@ -86,16 +86,16 @@ async function getMockTokens(amount: number): Promise<PublicKey> {
   await program.methods
     .mintMockTokens(new BN(amount))
     .accounts({
-      authority: walletKeypair.publicKey,
+      minter: walletKeypair.publicKey,
       mockMint: mockMintPda,
-      authorityTokenAccount: authorityAta,
+      minterTokenAccount: minterAta,
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       systemProgram: anchor.web3.SystemProgram.programId,
     })
     .rpc();
 
-  console.log(`Minted ${amount} mock tokens to ${authorityAta.toBase58()}`);
+  console.log(`Minted ${amount} mock tokens to ${minterAta.toBase58()}`);
   return mockMintPda;
 }
 ```
@@ -351,7 +351,7 @@ async function main() {
   // 5. Print the stream state immediately (0% vested)
   await readStream(streamDataPda);
 
-  // 6. Wait 30 seconds so ~8% vests (3600s stream / 30s = ~0.83%)
+  // 6. Wait 30 seconds so ~0.83% vests (30s / 3600s)
   //    In a real scenario you would wait longer or use a test validator with
   //    time manipulation.
   console.log("Waiting 30 seconds...");
@@ -434,7 +434,9 @@ async function createMilestoneStream(
     .addMilestone(new BN(400_000), hash1, verifier.publicKey)
     .accounts({
       creator: walletKeypair.publicKey,
+      recipient: recipient.publicKey,
       streamData: streamDataPda,
+      systemProgram: anchor.web3.SystemProgram.programId,
     })
     .rpc();
 
@@ -447,7 +449,9 @@ async function createMilestoneStream(
     .addMilestone(new BN(600_000), hash2, verifier.publicKey)
     .accounts({
       creator: walletKeypair.publicKey,
+      recipient: recipient.publicKey,
       streamData: streamDataPda,
+      systemProgram: anchor.web3.SystemProgram.programId,
     })
     .rpc();
 
@@ -456,7 +460,10 @@ async function createMilestoneStream(
     .verifyMilestone(0)   // milestone index 0
     .accounts({
       verifier: verifier.publicKey,
+      creator: walletKeypair.publicKey,
+      recipient: recipient.publicKey,
       streamData: streamDataPda,
+      systemProgram: anchor.web3.SystemProgram.programId,
     })
     .rpc();
 
@@ -478,7 +485,6 @@ async function getStreamsForCreator(creator: PublicKey) {
   //   creator: Pubkey at offset 8
   const accounts = await connection.getProgramAccounts(programId, {
     filters: [
-      { dataSize: 0 }, // remove this in practice; here for illustration
       {
         memcmp: {
           offset: 8, // skip 8-byte Anchor discriminator

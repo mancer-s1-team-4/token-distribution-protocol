@@ -257,7 +257,7 @@ Seven instructions are exposed. See [docs/INSTRUCTION_REFERENCE.md](docs/INSTRUC
 
 | Instruction | Signer | Purpose |
 |-------------|--------|---------|
-| `initialize` | anyone | One-time scaffold setup; stores protocol authority |
+| `initialize` | anyone | Scaffold instruction; logs the program ID and emits an event |
 | `create_stream` | creator | Lock tokens and define vesting schedule |
 | `withdraw` | recipient | Claim vested tokens |
 | `cancel` | creator | Terminate a cancelable stream; split escrow |
