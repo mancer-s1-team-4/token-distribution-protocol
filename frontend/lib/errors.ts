@@ -1,6 +1,6 @@
 const ANCHOR_ERROR_MESSAGES = new Map<number, string>([
   [0x1770, "Amount must be greater than zero."],
-  [0x1771, "Your wallet does not have enough tokens to fund this agreement."],
+  [0x1771, "The end date must be after the start date."],
   [0x1772, "The lock date must be between the start and end dates."],
   [0x1773, "Your wallet does not have enough tokens to fund this agreement."],
   [0x1774, "You cannot create an agreement with yourself as the recipient."],
