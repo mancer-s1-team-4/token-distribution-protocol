@@ -101,6 +101,7 @@ export function LandingScroll() {
           const heroSection = document.querySelector("[data-section='hero']") as HTMLElement | null;
 
           if (heroPanel && heroSection) {
+            heroPanel.style.willChange = "transform, opacity";
             gsap.set(heroPanel, {
               transformPerspective: 1100,
               rotateX: 8,

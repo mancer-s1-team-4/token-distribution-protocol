@@ -1,7 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
-import { LandingScroll } from "@/components/LandingScroll";
-import { VestingChart } from "@/components/VestingChart";
+import dynamic from "next/dynamic";
+
+const LandingScroll = dynamic(() =>
+  import("@/components/LandingScroll").then((m) => m.LandingScroll),
+);
+
+const VestingChart = dynamic(() =>
+  import("@/components/VestingChart").then((m) => m.VestingChart),
+);
 
 /* ─── data ─────────────────────────────────────────────────────────────────── */
 
@@ -159,7 +166,7 @@ export default function Home() {
         <div className="mx-auto max-w-[1400px] w-full grid gap-14 lg:grid-cols-[0.88fr_1.12fr] lg:items-center">
           <div>
             <h1
-              className="animate-fade-up font-display text-5xl font-bold leading-[0.94] tracking-tight text-foreground sm:text-6xl lg:text-7xl xl:text-[5.5rem]"
+              className="font-display text-5xl font-bold leading-[0.94] tracking-tight text-foreground sm:text-6xl lg:text-7xl xl:text-[5.5rem]"
               style={{ textWrap: "balance" } as React.CSSProperties}
             >
               Token releases with rules operators can trust.
@@ -178,7 +185,7 @@ export default function Home() {
           </div>
 
           <div>
-            <div data-parallax="hero-panel" className="rounded-xl border border-border/80 bg-hero-panel p-4" style={{ willChange: "transform" }}>
+            <div data-parallax="hero-panel" className="rounded-xl border border-border/80 bg-hero-panel p-4">
               <div className="rounded-lg border border-border/70 bg-background/70 p-5 backdrop-blur">
                 <div className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
@@ -376,7 +383,6 @@ export default function Home() {
                   key={audience.title}
                   data-parallax="audience-card"
                   className="group relative -mx-4 flex items-center gap-6 rounded-lg px-4 py-8 transition-colors duration-300 hover:bg-foreground/[0.04] sm:gap-10"
-                  style={{ willChange: "transform, opacity" }}
                 >
                   <Icon
                     style={{ color: audience.accentColor }}
@@ -402,7 +408,6 @@ export default function Home() {
         <div
           data-parallax="cta-band"
           className="mx-auto max-w-[1400px] overflow-hidden rounded-2xl border border-primary/30 bg-brand-accent p-10 sm:p-14 lg:p-20"
-          style={{ willChange: "transform, opacity" }}
         >
           <div className="grid gap-10 lg:grid-cols-[1fr_auto] lg:items-end">
             <h2 className="font-display text-6xl font-bold leading-[0.88] tracking-tight text-primary-foreground sm:text-7xl lg:text-8xl xl:text-9xl">

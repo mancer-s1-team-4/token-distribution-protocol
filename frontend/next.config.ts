@@ -12,6 +12,16 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
+  compress: true,
+  experimental: {
+    optimizePackageImports: [
+      "echarts",
+      "@solana/wallet-adapter-wallets",
+      "@solana/wallet-adapter-react",
+      "@privy-io/react-auth",
+    ],
+  },
   async headers() {
     return [
       {

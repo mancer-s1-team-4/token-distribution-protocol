@@ -1,25 +1,27 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Manrope, Space_Grotesk } from "next/font/google";
 import { ToastProvider } from "@/components/ToastProvider";
-import { WalletProvider } from "@/components/WalletProvider";
 import Script from "next/script";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["700"],
+  display: "swap",
 });
 
 const manrope = Manrope({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "700", "800"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -59,9 +61,7 @@ export default function RootLayout({
         ) : null}
       </head>
       <body className="min-h-full bg-background text-foreground">
-        <WalletProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </WalletProvider>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
