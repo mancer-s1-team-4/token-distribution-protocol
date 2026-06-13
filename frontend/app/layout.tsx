@@ -8,20 +8,20 @@ const spaceGrotesk = Space_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["700"],
-  display: "swap",
+  display: "fallback",
 });
 
 const manrope = Manrope({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "700", "800"],
-  display: "swap",
+  display: "fallback",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
-  display: "swap",
+  display: "fallback",
 });
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;

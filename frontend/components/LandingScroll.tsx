@@ -5,6 +5,7 @@ import { useEffect } from "react";
 export function LandingScroll() {
   useEffect(() => {
     let cleanup: (() => void) | undefined;
+    let idleId: number | ReturnType<typeof setTimeout> | undefined;
 
     const init = async () => {
       const [{ default: Lenis }, { default: gsap }, { ScrollTrigger }] = await Promise.all([
@@ -417,9 +418,19 @@ export function LandingScroll() {
       cleanup = () => mm.revert();
     };
 
-    init();
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = requestIdleCallback(() => init(), { timeout: 2000 });
+    } else {
+      idleId = setTimeout(() => init(), 200);
+    }
 
-    return () => cleanup?.();
+    return () => {
+      if (typeof idleId === "number") {
+        if ("requestIdleCallback" in window) cancelIdleCallback(idleId as number);
+        else clearTimeout(idleId);
+      }
+      cleanup?.();
+    };
   }, []);
 
   return null;

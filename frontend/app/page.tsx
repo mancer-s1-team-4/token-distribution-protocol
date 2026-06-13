@@ -113,7 +113,7 @@ export default function Home() {
       {/* ── Nav — always visible, z above pinned sections ─────────────────── */}
       <header
         data-nav
-        className="sticky top-0 z-[100] border-b border-border/60 bg-background/80 backdrop-blur-xl"
+        className="sticky top-0 z-[100] border-b border-border/60 bg-background/80 backdrop-blur-sm sm:backdrop-blur-xl"
       >
         {/* Scroll progress line */}
         <div
@@ -149,6 +149,7 @@ export default function Home() {
 
           <Link
             href="/streams"
+            prefetch={false}
             data-nav-cta
             data-magnet
             className="inline-flex min-h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-bold text-primary-foreground transition-colors hover:brightness-110 active:scale-[0.97]"
@@ -175,7 +176,7 @@ export default function Home() {
               On-chain escrow. Live balances. No manual releases.
             </p>
             <div className="animate-fade-up mt-9 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "0.13s" }}>
-              <Link href="/streams" data-magnet className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-bold text-primary-foreground transition-colors hover:brightness-110 active:scale-[0.97]">
+              <Link href="/streams" prefetch={false} data-magnet className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-bold text-primary-foreground transition-colors hover:brightness-110 active:scale-[0.97]">
                 Launch dashboard <ArrowIcon />
               </Link>
               <a href="#how-it-works" className="inline-flex min-h-12 items-center justify-center rounded-md border border-border bg-card/60 px-6 text-sm font-bold text-foreground backdrop-blur transition-colors hover:border-primary/40 hover:bg-card active:scale-[0.97]">
@@ -186,7 +187,7 @@ export default function Home() {
 
           <div>
             <div data-parallax="hero-panel" className="rounded-xl border border-border/80 bg-hero-panel p-4">
-              <div className="rounded-lg border border-border/70 bg-background/70 p-5 backdrop-blur">
+              <div className="rounded-lg border border-border/70 bg-background/80 p-5">
                 <div className="flex flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-primary">Distribution plan</p>
@@ -414,7 +415,7 @@ export default function Home() {
               Replace<br />manual<br />releases.
             </h2>
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row lg:flex-col lg:pb-2">
-              <Link href="/streams" data-magnet className="inline-flex min-h-14 items-center justify-center rounded-xl bg-primary-foreground px-8 text-base font-bold text-primary transition-colors hover:bg-primary-foreground/90 active:scale-[0.97]">
+              <Link href="/streams" prefetch={false} data-magnet className="inline-flex min-h-14 items-center justify-center rounded-xl bg-primary-foreground px-8 text-base font-bold text-primary transition-colors hover:bg-primary-foreground/90 active:scale-[0.97]">
                 Open app
               </Link>
               <a href="#features" data-magnet className="inline-flex min-h-14 items-center justify-center rounded-xl border border-primary-foreground/40 px-8 text-base font-bold text-primary-foreground transition-colors hover:bg-primary-foreground/10 active:scale-[0.97]">
