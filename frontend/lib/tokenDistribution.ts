@@ -153,12 +153,26 @@ export async function createStreamTx(
   const escrowTokenAccount = getEscrowPda(streamData);
   const creatorTokenAccount = getAssociatedTokenAddressSync(mint, creator);
 
-  // Pre-flight: verify the creator's token account exists before sending
+  // Pre-flight: verify the creator's token account exists and has sufficient balance.
+  // This produces a friendly error before sending the transaction rather than
+  // letting the on-chain InsufficientFunds check fire with a raw error code.
   const creatorTokenAccountInfo = await connection.getAccountInfo(creatorTokenAccount);
   if (!creatorTokenAccountInfo) {
     throw new Error(
       "NO_CREATOR_TOKEN_ACCOUNT: You don't have a token account for this token. " +
       "Hold some of this token in your wallet first, then try again."
+    );
+  }
+
+  const creatorBalance = await connection.getTokenAccountBalance(creatorTokenAccount);
+  const creatorBalanceBN = new anchor.BN(creatorBalance.value.amount);
+  if (creatorBalanceBN.lt(amount)) {
+    // Use a prefix that does not match the /insufficient/i fallback in friendlyError(),
+    // so the actual base-unit amounts reach the user rather than the generic message.
+    throw new Error(
+      `LOW_TOKEN_BALANCE: Not enough tokens to fund this stream. ` +
+      `Your account holds ${creatorBalance.value.amount} base units; ` +
+      `this stream requires ${amount.toString()} base units.`
     );
   }
 

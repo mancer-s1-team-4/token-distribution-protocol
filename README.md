@@ -1,10 +1,10 @@
 # Vestra
 
-Vestra is a Solana/Anchor program and Next.js app for token vesting streams. Creators lock SPL tokens into a PDA-owned escrow, define a schedule, and recipients withdraw the amount that has vested.
+Vestra is a Solana/Anchor program and Next.js app for token vesting streams. Creators lock SPL tokens into a PDA-owned escrow, define a schedule, and recipients withdraw the amount that has vested. No wallet can move the locked tokens directly -- only the program can.
 
 ## How it works
 
-Tokens are locked in a Program Derived Address (PDA) escrow at stream creation. The program tracks how much has vested using one of three schedules and releases only what the recipient has earned. No wallet can move the locked tokens directly.
+Tokens are locked in a Program Derived Address (PDA) escrow at stream creation. The program tracks how much has vested using one of three schedules and releases only what the recipient has earned.
 
 Three vesting schedules are supported:
 
@@ -18,10 +18,20 @@ Three vesting schedules are supported:
 token-distribution-protocol/
 ├── contracts/                     # Anchor workspace
 │   ├── programs/token-distribution-protocol/src/
-│   ├── scripts/                   # Manual deployment helpers
-│   ├── tests/                     # Anchor TypeScript tests
+│   │   ├── lib.rs                 # Program entry point
+│   │   ├── constant.rs            # Seeds and size constants
+│   │   ├── error.rs               # 20 error variants (codes 6000-6019)
+│   │   ├── event.rs               # Emitted events
+│   │   ├── state/mod.rs           # StreamData, Milestone, ProtocolState
+│   │   └── instructions/          # One file per instruction
+│   ├── scripts/                   # Deployment helpers
+│   ├── tests/                     # Anchor TypeScript test suite (7 files)
 │   ├── Anchor.toml
 │   └── Cargo.toml
+├── docs/                          # Technical documentation
+│   ├── INSTRUCTION_REFERENCE.md   # Every instruction, parameter, and error code
+│   ├── INTEGRATION_GUIDE.md       # Step-by-step guide with working code samples
+│   └── ADR.md                     # Architecture decision records
 ├── frontend/                      # Next.js app
 │   ├── app/
 │   ├── components/
@@ -31,26 +41,28 @@ token-distribution-protocol/
 
 ## Account structure
 
-| Account                   | Type     | Owner             | Purpose                                             |
-| ------------------------- | -------- | ----------------- | --------------------------------------------------- |
-| `StreamData`              | PDA      | Vesting Program   | Stores all stream fields — schedule, amounts, flags |
-| `EscrowTokenAccount`      | SPL ATA  | StreamData PDA    | Holds locked tokens — no human key controls this    |
-| `Mint Account`            | SPL Mint | SPL Token Program | Defines which token is distributed                  |
-| `Creator Token Account`   | ATA      | Creator           | Source of tokens at creation                        |
-| `Recipient Token Account` | ATA      | Recipient         | Destination of claimed tokens                       |
+| Account | Type | Owner | Purpose |
+|---------|------|-------|---------|
+| `StreamData` | PDA | Vesting Program | Stores all stream fields: schedule, amounts, flags, milestones |
+| `EscrowTokenAccount` | SPL TokenAccount | StreamData PDA | Holds locked tokens -- no human key controls this |
+| `Mint Account` | SPL Mint | SPL Token Program | Defines which token is distributed |
+| `Creator Token Account` | ATA | Creator | Source of tokens at creation |
+| `Recipient Token Account` | ATA | Recipient | Destination of claimed tokens |
 
-`StreamData` PDA seeds: `["stream", creator_pubkey, recipient_pubkey, stream_id_bytes]`.
+`StreamData` PDA seeds: `["stream", creator_pubkey, recipient_pubkey, stream_id_bytes]`
+
+Escrow PDA seeds: `["escrow", stream_data_pubkey]`
 
 ## Tech stack
 
-| Layer              | Choice                         | Why                                                         |
-| ------------------ | ------------------------------ | ----------------------------------------------------------- |
-| On-chain program   | Anchor 0.32.1 (Rust)           | Auto IDL, declarative account validation, industry standard |
-| Frontend           | Next.js + TypeScript           | Wallet connection and stream management UI                  |
-| On-chain SDK       | `@coral-xyz/anchor`            | Reads IDL, typed instruction calls, Borsh serialization     |
-| Wallet             | `@solana/wallet-adapter-react` | Phantom, Backpack, Solflare in one hook                     |
-| Testing            | Anchor test suite (Mocha/Chai) | Auto-scaffolded, typed, error-code assertions               |
-| Local dev          | Solana test validator          | Ships with Solana CLI, zero extra setup                     |
+| Layer | Choice | Why |
+|-------|--------|-----|
+| On-chain program | Anchor 0.32.1 (Rust) | Auto IDL, declarative account validation, industry standard |
+| Frontend | Next.js + TypeScript | Wallet connection and stream management UI |
+| On-chain SDK | `@coral-xyz/anchor` | Reads IDL, typed instruction calls, Borsh serialization |
+| Wallet | `@solana/wallet-adapter-react` | Phantom, Backpack, Solflare in one hook |
+| Testing | Anchor test suite (Mocha/Chai) | Auto-scaffolded, typed, error-code assertions |
+| Local dev | Solana test validator | Ships with Solana CLI, zero extra setup |
 
 ## Prerequisites
 
@@ -70,7 +82,7 @@ sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
 solana --version   # should print 1.18.x
 ```
 
-**3. Anchor CLI** (must be 0.32.1 — this project uses 0.32.1 syntax)
+**3. Anchor CLI** (must be 0.32.1)
 
 ```bash
 cargo install --git https://github.com/coral-xyz/anchor avm --locked
@@ -100,63 +112,49 @@ Install the Anchor workspace dependencies:
 
 ```bash
 cd contracts
-rtk pnpm install
+pnpm install
 ```
 
-For local development, you can use the default Solana CLI wallet:
+For local development, configure the Solana CLI:
 
 ```bash
-rtk solana-keygen new --outfile ~/.config/solana/id.json
-rtk solana config set --keypair ~/.config/solana/id.json
-rtk solana config set --url localhost
+solana-keygen new --outfile ~/.config/solana/id.json
+solana config set --keypair ~/.config/solana/id.json
+solana config set --url localhost
 ```
 
-### Dedicated Mancer deploy wallet
+### Dedicated devnet deploy wallet
 
-For deployment, use a dedicated wallet stored at the root of the Anchor workspace:
+For deployment, use a dedicated wallet at the root of the Anchor workspace:
 
 ```bash
 cd contracts
-rtk solana-keygen new --outfile ./mancer-deployer.json
+solana-keygen new --outfile ./mancer-deployer.json
 ```
 
-The file `contracts/mancer-deployer.json` is ignored by git. Do not commit it, share it, or paste its contents anywhere.
-
-Check the wallet address:
+The file `contracts/mancer-deployer.json` is ignored by git. Do not commit it.
 
 ```bash
-rtk solana-keygen pubkey ./mancer-deployer.json
-```
-
-Use it as the active Solana CLI wallet:
-
-```bash
-rtk solana config set --keypair ./mancer-deployer.json
-rtk solana config set --url devnet
-rtk solana config get
-```
-
-Fund it on devnet:
-
-```bash
-rtk solana airdrop 5 --url devnet
-rtk solana balance --url devnet
+solana-keygen pubkey ./mancer-deployer.json
+solana config set --keypair ./mancer-deployer.json
+solana config set --url devnet
+solana airdrop 5 --url devnet
+solana balance --url devnet
 ```
 
 ## Build
 
 ```bash
 cd contracts
-rtk anchor build
+anchor build
 ```
 
-The compiled program binary goes to `contracts/target/deploy/token_distribution_protocol.so`.
-The IDL and TypeScript types land in `contracts/target/idl/` and `contracts/target/types/`.
+The compiled program binary goes to `contracts/target/deploy/token_distribution_protocol.so`. The IDL and TypeScript types land in `contracts/target/idl/` and `contracts/target/types/`.
 
 If you see a program ID mismatch warning, sync it:
 
 ```bash
-rtk anchor keys sync
+anchor keys sync
 ```
 
 ## Run tests
@@ -165,52 +163,44 @@ Tests run against a local validator that Anchor spins up automatically.
 
 ```bash
 cd contracts
-rtk anchor test
+anchor test
 ```
 
-Expected output:
-
-```
-27 passing
-```
+Expected output: `27 passing`
 
 To run tests against a manually started validator:
 
 ```bash
 # Terminal 1
-rtk solana-test-validator
+solana-test-validator
 
 # Terminal 2
 cd contracts
-rtk anchor test --skip-local-validator
+anchor test --skip-local-validator
 ```
 
 ## Deploy to devnet
 
-Use the manual deployment script. It uses `contracts/mancer-deployer.json` unless `ANCHOR_WALLET` is set.
-
 ```bash
 cd contracts
-rtk pnpm run deploy:devnet
+pnpm run deploy:devnet
 ```
 
-For an existing devnet program, use one of these:
+For an existing deployment:
 
 ```bash
 cd contracts
-rtk pnpm run upgrade:devnet
-rtk pnpm run redeploy:devnet
+pnpm run upgrade:devnet   # deploy new .so, keep same program ID
+pnpm run redeploy:devnet  # full redeploy via anchor deploy
 ```
 
-Both commands keep the same program ID. `upgrade:devnet` deploys the built `.so`
-with `solana program deploy`; `redeploy:devnet` uses `anchor deploy`. The scripts
-also sync the generated Anchor IDL into `frontend/lib/idl/token_distribution_protocol.json`.
+Both commands sync the generated IDL into `frontend/lib/idl/token_distribution_protocol.json`.
 
-To deploy with the dedicated Mancer deploy wallet without changing your global Solana config:
+To deploy with the dedicated wallet without changing your global Solana config:
 
 ```bash
 cd contracts
-ANCHOR_WALLET=./mancer-deployer.json rtk pnpm run deploy:devnet
+ANCHOR_WALLET=./mancer-deployer.json pnpm run deploy:devnet
 ```
 
 Current devnet deployment:
@@ -218,9 +208,7 @@ Current devnet deployment:
 - Program ID: `J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3`
 - Devnet Explorer: [View program on Solana Explorer](https://explorer.solana.com/address/J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3?cluster=devnet)
 - Upgrade authority: `G5zy6qdVJ71Z1hP5QiGYkfyRLZ34CZaLBRQEYrNT1ocY`
-- ProgramData address: `HUXED9EDLgqxfB7xToBfajeQQTjDb9MM5TRDQ6MHmP9X`
 - Last deployed slot: `463910857`
-- Deploy signature: `3ELDie8q3t6yNwpRxfSEcsTvegoEFHWSjjYfrarNs8VJWDeeuc35iQDy5DvXhBqA1AeSJutbCEQcJV9BsDa3Yp4g`
 
 The deploy script runs:
 
@@ -233,24 +221,20 @@ The deploy script runs:
 
 ## Setup frontend
 
-Install frontend dependencies:
-
 ```bash
 cd frontend
-rtk pnpm install
+pnpm install
 ```
 
-Create `frontend/.env.local` for devnet:
+Create `frontend/.env.local`:
 
 ```env
 NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
-# Optional when your RPC provider has a separate WebSocket URL:
-# NEXT_PUBLIC_RPC_WS_URL=wss://api.devnet.solana.com
 NEXT_PUBLIC_SOLANA_CLUSTER=devnet
 NEXT_PUBLIC_TDP_PROGRAM_ID=J4zBUJeaXA26nV6i9Jz45t4hfwNrsxZ96g5ozhwALfX3
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-RLN61Y19VN
 
-# Server-only devnet faucet. Never prefix this with NEXT_PUBLIC.
+# Server-only faucet key. Never prefix this with NEXT_PUBLIC.
 DEVNET_FAUCET_SECRET_KEY=[1,2,3,...]
 DEVNET_FAUCET_AMOUNT_SOL=0.05
 DEVNET_FAUCET_MAX_BALANCE_SOL=0.1
@@ -260,139 +244,93 @@ Run the Next.js app:
 
 ```bash
 cd frontend
-rtk bun run dev
+bun run dev
 ```
 
-The local app runs at `http://localhost:3000`.
+The app runs at `http://localhost:3000`.
 
-The app supports creating linear/cliff streams, viewing streams for the connected wallet, withdrawing vested tokens, verifying milestones, and cancelling cancelable streams.
-
-### Analytics
-
-The frontend is already connected to Google Analytics through `frontend/app/layout.tsx`.
-
-- Google Analytics measurement ID: `G-RLN61Y19VN`
-- The measurement ID is read from `NEXT_PUBLIC_GA_MEASUREMENT_ID`.
-- Script source: `https://www.googletagmanager.com/gtag/js`
-- Tracking is loaded with Next.js `Script` using the `afterInteractive` strategy only when the env var is configured.
+Features: create linear/cliff/milestone streams, view streams for connected wallet, withdraw vested tokens, verify milestones, cancel cancelable streams.
 
 ## Smart contract instructions
 
-### `initialize`
+Seven instructions are exposed. See [docs/INSTRUCTION_REFERENCE.md](docs/INSTRUCTION_REFERENCE.md) for the full reference including parameters, error codes, and code examples.
 
-Creates the protocol state PDA and stores the authority. This is a setup instruction kept from the project scaffold.
+| Instruction | Signer | Purpose |
+|-------------|--------|---------|
+| `initialize` | anyone | Scaffold instruction; logs the program ID and emits an event |
+| `create_stream` | creator | Lock tokens and define vesting schedule |
+| `withdraw` | recipient | Claim vested tokens |
+| `cancel` | creator | Terminate a cancelable stream; split escrow |
+| `add_milestone` | creator | Append a milestone to a milestone-type stream |
+| `verify_milestone` | designated verifier | Mark a milestone complete, unlocking its tokens |
+| `mint_mock_tokens` | anyone | Devnet faucet for testing (max 1,000,000 tokens) |
 
-### `create_stream`
+### Vesting math
 
-Creates a new vesting stream and locks tokens into escrow.
+**Linear / Cliff+Linear:**
 
-The creator signs the transaction, provides the recipient, SPL mint, token amount, schedule times, stream type, and cancelability flag. The program creates:
-
-- `StreamData` PDA using `["stream", creator, recipient, stream_id]`
-- escrow token account PDA using `["escrow", stream_data]`
-
-Then it transfers tokens from the creator token account into the escrow token account. The escrow authority is the `StreamData` PDA, so only the program can release the funds.
-
-Supported stream types:
-
-- `0`: linear vesting from `start_time` to `end_time`
-- `1`: cliff + linear vesting, blocked until `cliff_time`
-- `2`: milestone vesting, unlocked by verified milestones
-
-### `withdraw`
-
-Lets the recipient claim vested tokens.
-
-The program calculates:
-
-```text
-claimable = vested_amount_now - amount_claimed
+```
+if now < cliff_time:  vested = 0
+elif now >= end_time: vested = amount_total
+else:                 vested = floor(amount_total * (now - start_time) / (end_time - start_time))
 ```
 
-If `claimable` is greater than zero, the program signs with the `StreamData` PDA seeds and transfers tokens from escrow to the recipient associated token account. It then updates `amount_claimed`.
+**Milestone:**
 
-### `cancel`
+```
+vested = sum(milestone.amount for each verified milestone)
+```
 
-Lets the creator cancel a cancelable stream before it is fully vested.
+## Documentation
 
-The program calculates vested and unvested balances:
-
-- vested but unclaimed tokens go to the recipient
-- unvested tokens go back to the creator
-
-The stream is then marked as cancelled, which prevents further withdraws.
-
-### `add_milestone`
-
-Lets the creator add a milestone to a milestone-type stream.
-
-Each milestone stores:
-
-- token amount unlocked by that milestone
-- SHA-256 description hash
-- verifier public key
-- verification status
-
-The program prevents adding milestones after recipient activity has started and prevents the total milestone amount from exceeding the stream total.
-
-### `verify_milestone`
-
-Lets the designated verifier mark one milestone as complete.
-
-Only the verifier stored on that milestone can call this instruction. Once verified, that milestone's token amount becomes part of the recipient's vested balance and can be withdrawn through `withdraw`.
+| File | Contents |
+|------|----------|
+| [docs/INSTRUCTION_REFERENCE.md](docs/INSTRUCTION_REFERENCE.md) | Every instruction with full parameter tables, error codes, and TypeScript examples |
+| [docs/INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md) | Step-by-step guide to integrate with the program from scratch |
+| [docs/ADR.md](docs/ADR.md) | Architecture decision records explaining key technical choices |
+| [contracts/SECURITY_CHECKLIST.md](contracts/SECURITY_CHECKLIST.md) | Security review findings and fixes |
 
 ## End-to-end local flow
 
-1. Build and test the program:
-
 ```bash
+# 1. Build and test
 cd contracts
-rtk anchor build
-rtk anchor test
-```
+anchor build
+anchor test
 
-2. Create and fund the Mancer devnet deploy wallet:
+# 2. Create and fund a devnet deploy wallet
+solana-keygen new --outfile ./mancer-deployer.json
+solana config set --keypair ./mancer-deployer.json
+solana config set --url devnet
+solana airdrop 5 --url devnet
 
-```bash
-cd contracts
-rtk solana-keygen new --outfile ./mancer-deployer.json
-rtk solana config set --keypair ./mancer-deployer.json
-rtk solana config set --url devnet
-rtk solana airdrop 5 --url devnet
-```
+# 3. Deploy
+ANCHOR_WALLET=./mancer-deployer.json pnpm run deploy:devnet
 
-3. Deploy:
-
-```bash
-cd contracts
-ANCHOR_WALLET=./mancer-deployer.json rtk pnpm run deploy:devnet
-```
-
-4. Start the frontend:
-
-```bash
-cd frontend
-rtk pnpm install
-rtk bun run dev
+# 4. Start the frontend
+cd ../frontend
+pnpm install
+bun run dev
 ```
 
 ---
 
 ## Common issues
 
-| Error                       | Fix                                                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `anchor: command not found` | Run `avm use 0.32.1` and restart your terminal                                                                   |
-| `Program id mismatch`       | Run `rtk anchor keys sync` inside `contracts/`                                                                   |
-| `Error: Account not found`  | The test validator is not running. Run `rtk anchor test` or start `rtk solana-test-validator` manually.           |
-| `insufficient funds`        | Run `rtk solana airdrop 5 --url devnet` for devnet.                                                             |
-| `Wallet not found`          | Set `ANCHOR_WALLET=./mancer-deployer.json` or run `rtk solana config set --keypair ./mancer-deployer.json`.      |
-| pnpm not found              | Run `npm install -g pnpm`.                                                                                        |
+| Error | Fix |
+|-------|-----|
+| `anchor: command not found` | Run `avm use 0.32.1` and restart your terminal |
+| `Program id mismatch` | Run `anchor keys sync` inside `contracts/` |
+| `Error: Account not found` | Validator is not running. Run `anchor test` or start `solana-test-validator` manually |
+| `insufficient funds` | Run `solana airdrop 5 --url devnet` |
+| `Wallet not found` | Set `ANCHOR_WALLET=./mancer-deployer.json` or run `solana config set --keypair ./mancer-deployer.json` |
+| pnpm not found | Run `npm install -g pnpm` |
+| Stale IDL errors after Rust changes | Run `anchor build` before `anchor test` |
 
 ---
 
 ## Tips
 
-- Use `pnpm` for all JS package management — `npm` and `yarn` may cause lock file conflicts
-- Run `anchor build` before `anchor test` if you change Rust code and see stale IDL errors
-- The `contracts/rust-toolchain.toml` pins the Rust version — don't remove it
+- Use `pnpm` for all JS package management -- `npm` and `yarn` may cause lock file conflicts.
+- The `contracts/rust-toolchain.toml` pins the Rust version -- do not remove it.
+- `stream_id` must be unique per (creator, recipient) pair. Using `Date.now()` works well in scripts and tests.
